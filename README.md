@@ -5,10 +5,8 @@
 2. flops-counter.pytorch (https://github.com/sovrasov/flops-counter.pytorch)
 
 ## Infer:
-
-'''
-sh infer.sh
-'''
+1. put 'sequences' folder under 'data/'
+2. sh infer.sh
 
 ## Attention
 
