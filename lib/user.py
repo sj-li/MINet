@@ -34,7 +34,6 @@ class User():
 
     # get the data
     ARCH['train']['batch_size'] = 1
-    print('*******', ARCH['train']['batch_size'])
     self.parser = Parser(root=self.datadir,
                      data_cfg = DATA,
                      arch_cfg = ARCH,
@@ -42,7 +41,7 @@ class User():
                      shuffle_train=False)
 
     # concatenate the encoder and the head
-    self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), dropout=0)
+    self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), dropout=0, is_train=False)
 
     # use knn post processing?
     self.post = None
@@ -61,8 +60,11 @@ class User():
       self.gpu = True
       self.model.cuda()
 
-    w_dict = torch.load(self.checkpoint)
-    self.model.load_state_dict(w_dict['model'])
+    pretrained_dict = torch.load(self.checkpoint)['model']
+    model_dict = self.model.state_dict()
+    pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+    model_dict.update(pretrained_dict) 
+    self.model.load_state_dict(pretrained_dict)
  
 
     print("Finish inilization ...")
@@ -158,8 +160,10 @@ class User():
         pred_np.tofile(path)
 
       with torch.cuda.device(0):
-        macs, params = get_model_complexity_info(self.model.cuda(), (5, 64, 2048), as_strings=True,
+        macs, params = get_model_complexity_info(self.model.cuda(), (ARCH['model']['in_channels'], ARCH['dataset']['sensor']['img_prop']['height'], ARCH['dataset']['sensor']['img_prop']['width']), as_strings=True,
                                                print_per_layer_stat=True, verbose=True)
         print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
         print('{:<30}  {:<8}'.format('Number of parameters: ', params))
+
+
       print('Avg run time: ', total_time/len(loader))

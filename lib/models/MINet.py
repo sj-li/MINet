@@ -183,7 +183,7 @@ class MPS(nn.Module):
 class CascadeFeatureFusion(nn.Module):
     """CFF Unit"""
 
-    def __init__(self, low_channels, high_channels, out_channels, nclass, norm_layer=nn.BatchNorm2d):
+    def __init__(self, low_channels, high_channels, out_channels, nclass, norm_layer=nn.BatchNorm2d, is_train=True):
         super(CascadeFeatureFusion, self).__init__()
         self.conv_low = nn.Sequential(
             nn.Conv2d(low_channels, out_channels, 3, padding=2, dilation=2, bias=False),
@@ -193,7 +193,10 @@ class CascadeFeatureFusion(nn.Module):
             nn.Conv2d(high_channels, out_channels, 1, bias=False),
             norm_layer(out_channels)
         )
-        self.conv_low_cls = nn.Conv2d(out_channels, 1, 1, bias=False)
+
+        self.is_train = is_train
+        if is_train:
+            self.conv_low_cls = nn.Conv2d(out_channels, 1, 1, bias=False)
 
     def forward(self, x_low, x_high):
         x_low = F.interpolate(x_low, size=x_high.size()[2:], mode='bilinear', align_corners=True)
@@ -201,9 +204,12 @@ class CascadeFeatureFusion(nn.Module):
         x_high = self.conv_high(x_high)
         x = x_low + x_high
         x = F.relu(x, inplace=True)
-        x_low_cls = self.conv_low_cls(x_low)
 
-        return x, x_low_cls
+        if self.is_train:
+            x_low_cls = self.conv_low_cls(x_low)
+            return x, x_low_cls
+        else:
+            return x, None
 
 class hswish(nn.Module):
     def forward(self, x):
@@ -248,7 +254,7 @@ class Block(nn.Module):
 
 
 class MINet(nn.Module):
-    def __init__(self, in_channels, num_classes, dropout, use_mps=True):
+    def __init__(self, in_channels, num_classes, dropout, use_mps=True, is_train=True):
         super(MINet, self).__init__()
 
         self.in_channels = in_channels
@@ -300,7 +306,7 @@ class MINet(nn.Module):
 
 
         self.conv_f = nn.Conv2d(384, 32, 1)
-        self.cf = CascadeFeatureFusion(32, 32, 32, num_classes)
+        self.cf = CascadeFeatureFusion(32, 32, 32, num_classes, is_train=is_train)
 
         self.dp = nn.Dropout2d(p=dropout)
         self.classifier = nn.Conv2d(32, num_classes, kernel_size=3, stride=1, padding=1)
@@ -308,7 +314,7 @@ class MINet(nn.Module):
         self.pool2 = nn.AvgPool2d(2)
         self.pool4 = nn.AvgPool2d(4)
 
-        self.use_mps = use_mps
+        self.use_mps = use_mps and is_train
         if self.use_mps:
             self.mps_1 = MPS(64, 64, num_classes)
             self.mps_2 = MPS(128, 128, num_classes)
