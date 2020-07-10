@@ -197,8 +197,6 @@ split: # sequence numbers
     - 9
     - 10
   valid:
-   - 8
-  test:
     - 11
     - 12
     - 13
@@ -210,4 +208,5 @@ split: # sequence numbers
     - 19
     - 20
     - 21
-
+  test:
+   - 8
