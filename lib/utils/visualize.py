@@ -4,17 +4,16 @@
 import argparse
 import os
 import yaml
-import __init__ as booger
-
-from common.laserscan import LaserScan, SemLaserScan
-from common.laserscanvis import LaserScanVis
+from laserscan import LaserScan, SemLaserScan
+from laserscanvis import LaserScanVis
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser("./visualize.py")
   parser.add_argument(
       '--dataset', '-d',
       type=str,
-      required=True,
+      required=False,
+      default='data',
       help='Dataset to visualize. No Default',
   )
   parser.add_argument(
@@ -50,6 +49,13 @@ if __name__ == '__main__':
       'Defaults to %(default)s',
   )
   parser.add_argument(
+      '--do_instances', '-di',
+      dest='do_instances',
+      default=False,
+      action='store_true',
+      help='Visualize instances too. Defaults to %(default)s',
+  )
+  parser.add_argument(
       '--offset',
       type=int,
       default=0,
@@ -76,6 +82,7 @@ if __name__ == '__main__':
   print("Sequence", FLAGS.sequence)
   print("Predictions", FLAGS.predictions)
   print("ignore_semantics", FLAGS.ignore_semantics)
+  print("do_instances", FLAGS.do_instances)
   print("ignore_safety", FLAGS.ignore_safety)
   print("offset", FLAGS.offset)
   print("*" * 80)
@@ -133,18 +140,19 @@ if __name__ == '__main__':
     scan = LaserScan(project=True)  # project all opened scans to spheric proj
   else:
     color_dict = CFG["color_map"]
-    scan = SemLaserScan(color_dict, project=True)
+    nclasses = len(color_dict)
+    scan = SemLaserScan(sem_color_dict=color_dict, project=True)
 
   # create a visualizer
   semantics = not FLAGS.ignore_semantics
+  instances = FLAGS.do_instances
   if not semantics:
     label_names = None
   vis = LaserScanVis(scan=scan,
                      scan_names=scan_names,
                      label_names=label_names,
                      offset=FLAGS.offset,
-                     semantics=semantics,
-                     instances=False)
+                     semantics=semantics, instances=instances and semantics)
 
   # print instructions
   print("To navigate:")
@@ -154,3 +162,4 @@ if __name__ == '__main__':
 
   # run the visualizer
   vis.run()
+

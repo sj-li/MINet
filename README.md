@@ -6,7 +6,7 @@
 
 ## Infer:
 1. put 'sequences' folder under 'data/'
-2. sh infer.sh
+2. 'python infer.py --dataset data  --arch_cfg config/arch/config_file  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/checkpoint_file --log predictions'
 
 ## Attention
 

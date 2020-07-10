@@ -53,6 +53,14 @@ if __name__ == '__main__':
       help='Directory to save predictions.'
   )
 
+  parser.add_argument(
+      '--split',
+      type=str,
+      required=False,
+      default='valid',
+      help='Split to infer.'
+  )
+
 
 
   FLAGS, unparsed = parser.parse_known_args()
@@ -113,5 +121,5 @@ if __name__ == '__main__':
     quit()
 
   # create user and infer dataset
-  user = User(ARCH, DATA, FLAGS.dataset, FLAGS.log, FLAGS.checkpoint)
+  user = User(ARCH, DATA, FLAGS.dataset, FLAGS.log, FLAGS.checkpoint, FLAGS.split)
   user.infer()

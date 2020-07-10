@@ -5,7 +5,7 @@ import vispy
 from vispy.scene import visuals, SceneCanvas
 import numpy as np
 from matplotlib import pyplot as plt
-from common.laserscan import LaserScan, SemLaserScan
+from laserscan import LaserScan, SemLaserScan
 
 
 class LaserScanVis:

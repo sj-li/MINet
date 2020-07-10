@@ -24,13 +24,14 @@ from .models import *
 from ptflops import get_model_complexity_info
 
 class User():
-  def __init__(self, ARCH, DATA, datadir, logdir, checkpoint):
+  def __init__(self, ARCH, DATA, datadir, logdir, checkpoint, split='valid'):
     # parameters
     self.ARCH = ARCH
     self.DATA = DATA
     self.datadir = datadir
     self.logdir = logdir
     self.checkpoint = checkpoint
+    self.split = split
 
     # get the data
     ARCH['train']['batch_size'] = 1
@@ -39,6 +40,7 @@ class User():
                      arch_cfg = ARCH,
                      gt=True,
                      shuffle_train=False)
+    self.input_size = (ARCH['model']['in_channels'], ARCH['dataset']['sensor']['img_prop']['height'], ARCH['dataset']['sensor']['img_prop']['width'])
 
     # concatenate the encoder and the head
     self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), dropout=0, is_train=False)
@@ -71,15 +73,24 @@ class User():
 
   def infer(self):
      ## do train set
-    #self.infer_subset(loader=self.parser.get_train_set(),
-    #                  to_orig_fn=self.parser.to_original)
+    self.infer_subset(loader=self.parser.get_train_set(),
+                      to_orig_fn=self.parser.to_original)
+
+
+    if 'train' == self.split:
+        self.infer_subset(loader=self.parser.get_train_set(),
+                      to_orig_fn=self.parser.to_original)
 
      # do valid set
-    self.infer_subset(loader=self.parser.get_valid_set(),
+    if 'valid' == self.split:
+        self.infer_subset(loader=self.parser.get_valid_set(),
                       to_orig_fn=self.parser.to_original)
+
     # do test set
-    #self.infer_subset(loader=self.parser.get_test_set(),
-    #                  to_orig_fn=self.parser.to_original)
+    if 'test' == self.split:
+        self.infer_subset(loader=self.parser.get_test_set(),
+                      to_orig_fn=self.parser.to_original)
+
 
     print('Finished Infering ...')
 
@@ -160,7 +171,7 @@ class User():
         pred_np.tofile(path)
 
       with torch.cuda.device(0):
-        macs, params = get_model_complexity_info(self.model.cuda(), (ARCH['model']['in_channels'], ARCH['dataset']['sensor']['img_prop']['height'], ARCH['dataset']['sensor']['img_prop']['width']), as_strings=True,
+        macs, params = get_model_complexity_info(self.model.cuda(), self.input_size, as_strings=True,
                                                print_per_layer_stat=True, verbose=True)
         print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
         print('{:<30}  {:<8}'.format('Number of parameters: ', params))

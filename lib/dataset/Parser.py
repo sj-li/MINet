@@ -21,7 +21,7 @@ class Parser():
     self.root = root
     self.train_sequences = data_cfg["split"]["train"]
     self.valid_sequences = data_cfg["split"]["valid"]
-    self.test_sequences = None
+    self.test_sequences = data_cfg["split"]["test"]
     self.labels = data_cfg["labels"]
     self.color_map = data_cfg["color_map"]
     self.learning_map = data_cfg["learning_map"]
@@ -83,7 +83,7 @@ class Parser():
                                         learning_map=self.learning_map,
                                         learning_map_inv=self.learning_map_inv,
                                         sensor=self.sensor,
-                                        max_points=max_points,
+                                        max_points=self.max_points,
                                         gt=False)
 
       self.testloader = torch.utils.data.DataLoader(self.test_dataset,

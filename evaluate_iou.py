@@ -161,8 +161,8 @@ if __name__ == '__main__':
   # print(pred_names)
 
   # check that I have the same number of files
-  # print("labels: ", len(label_names))
-  # print("predictions: ", len(pred_names))
+  #print("labels: ", len(label_names))
+  #print("predictions: ", len(pred_names))
   assert(len(label_names) == len(scan_names) and
          len(label_names) == len(pred_names))
 
