@@ -1,0 +1,4 @@
+python infer.py --dataset data --arch_cfg config/arch/BiSeNet-2048.yaml  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/BiseNet.path --log predictions --split test > BiseNet_q6000.txt
+python infer.py --dataset data --arch_cfg config/arch/DeepLab-2048.yaml  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/Deeplab.path --log predictions --split test > Deeplab_q6000.txt
+python infer.py --dataset data --arch_cfg config/arch/DenseASPP-2048.yaml  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/DenseASPP.path --log predictions --split test > DenseASPP_q6000.txt
+python infer.py --dataset data --arch_cfg config/arch/PSPNet-2048.yaml  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/PSPNet.path --log predictions --split test > PSPNet_q6000.txt

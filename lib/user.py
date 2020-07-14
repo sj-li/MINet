@@ -73,9 +73,6 @@ class User():
 
   def infer(self):
      ## do train set
-    self.infer_subset(loader=self.parser.get_train_set(),
-                      to_orig_fn=self.parser.to_original)
-
 
     if 'train' == self.split:
         self.infer_subset(loader=self.parser.get_train_set(),
@@ -109,11 +106,7 @@ class User():
 
     with torch.no_grad():
 
-      #for i, (proj_in, proj_mask, _, _, path_seq, path_name, p_x, p_y, proj_range, unproj_range, _, _, _, _, npoints, _) in enumerate(loader):
-      for i in range(len(loader)):
-        # first cut to rela size (batch size one allows it)
-        data = self.parser.get_valid_batch()
-        proj_in, proj_mask, _, _, path_seq, path_name, p_x, p_y, proj_range, unproj_range, _, _, _, _, npoints, _ = data
+      for i, (proj_in, proj_mask, _, _, path_seq, path_name, p_x, p_y, proj_range, unproj_range, _, _, _, _, npoints, _) in enumerate(loader):
         p_x = p_x[0, :npoints]
         p_y = p_y[0, :npoints]
         proj_range = proj_range[0, :npoints]
@@ -130,6 +123,7 @@ class User():
             proj_range = proj_range.cuda()
             unproj_range = unproj_range.cuda()
 
+        #proj_in = proj_in.unsqueeze(0).permute(2, 1, 0, 3, 4)
         end = time.time()
 
         # compute output

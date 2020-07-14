@@ -79,7 +79,7 @@ class FeatureFusionModule(torch.nn.Module):
         return x
 
 class BiSeNet(torch.nn.Module):
-    def __init__(self, in_channels, num_classes, dropout, context_path="resnet101"):
+    def __init__(self, in_channels, num_classes, dropout, context_path="resnet101", is_train=True):
         super().__init__()
         # build spatial path
         self.saptial_path = Spatial_path()

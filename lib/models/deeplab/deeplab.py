@@ -8,7 +8,7 @@ from .backbone import build_backbone
 
 class DeepLab(nn.Module):
     def __init__(self, in_channels, num_classes, dropout, backbone='resnet', output_stride=16,
-                 sync_bn=False, freeze_bn=False):
+                 sync_bn=False, freeze_bn=False, is_train=True):
         super(DeepLab, self).__init__()
         if backbone == 'drn':
             output_stride = 8

@@ -27,7 +27,7 @@ class PPM(nn.Module):
 
 
 class PSPNet(nn.Module):
-    def __init__(self, in_channels, num_classes, dropout, layers=50, bins=(1, 2, 3, 6), zoom_factor=8, use_ppm=True, criterion=nn.CrossEntropyLoss(ignore_index=255), pretrained=False):
+    def __init__(self, in_channels, num_classes, dropout, layers=50, bins=(1, 2, 3, 6), zoom_factor=8, use_ppm=True, criterion=nn.CrossEntropyLoss(ignore_index=255), pretrained=False, is_train=False):
         super(PSPNet, self).__init__()
         assert layers in [50, 101, 152]
         assert 2048 % len(bins) == 0

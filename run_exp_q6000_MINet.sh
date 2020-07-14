@@ -1,0 +1,4 @@
+python infer.py --dataset data --arch_cfg config/arch/MINet-512.yaml  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/MINet-512.path --log predictions --split test > MINet-512-q6000.txt
+python infer.py --dataset data --arch_cfg config/arch/MINet-1024.yaml  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/MINet-1024.path --log predictions --split test > MINet-1024-q6000.txt
+python infer.py --dataset data --arch_cfg config/arch/MINet-2048.yaml  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/MINet-2048.path --log predictions --split test > MINet-2048-q6000.txt
+python infer.py --dataset data --arch_cfg config/arch/MINet-2048-knn.yaml  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/MINet-2048.path --log predictions --split test > MINet-2048-knn-q6000.txt

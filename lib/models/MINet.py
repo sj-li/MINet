@@ -340,6 +340,9 @@ class MINet(nn.Module):
 
     def forward(self, x):
         xs = []
+        #for i in range(self.in_channels):
+        #    xs.append(self.conv_in[i](x[i,:,:,:,:]))
+ 
         for i in range(self.in_channels):
             xs.append(self.conv_in[i](x[:,i,:,:].unsqueeze(1)))
         xs = torch.cat(xs, 1)
