@@ -34,7 +34,6 @@ First you need to install the nvidia driver and CUDA.
 ## Data Preparation
 1. Download SemanticKITTI: [link](http://semantic-kitti.org/)
 1. put 'sequences' folder under 'data/'
-2. 'python infer.py --dataset data  --arch_cfg config/arch/config_file  --data_cfg config/labels/semantic-kitti.yaml --checkpoint checkpoints/checkpoint_file --log predictions'
 
 ## Apps
 
@@ -59,13 +58,13 @@ $ python lib/utils/visualize.py -d /path/to/dataset/ -p /path/to/predictions/ -s
 To train a network (from scratch):
 
 ```sh
-$ python train.py -d /path/to/dataset  --ac config/arch/CHOICE.yaml -l /path/to/log
+$ python train.py -d /path/to/dataset  -ac config/arch/CHOICE.yaml -l /path/to/log
 ```
 
 To train a network (from pretrained model):
 
 ```
-$ python train.py -d /path/to/dataset  --ac config/arch/CHOICE.yaml -l /path/to/log -p /path/to/pretrained
+$ python train.py -d /path/to/dataset  -ac config/arch/CHOICE.yaml -l /path/to/log -p /path/to/pretrained
 ```
 
 This will generate a tensorboard log, which can be visualized by running:
@@ -82,8 +81,7 @@ And acccessing [http://localhost:5555](http://localhost:5555) in your browser.
 To infer the predictions for the entire dataset:
 
 ```sh
-$ ./infer.py -d /path/to/dataset/ -l /path/for/predictions -m /path/to/model
-python infer.py -d /path/to/dataset/ --ac  config/arch/CHOICE.yaml --checkpoint CHECKPOINT --log predictions
+$ python infer.py -d /path/to/dataset/ -ac  config/arch/CHOICE.yaml -c CHECKPOINT -l predictions
 ````
 
 ### Evaluation
@@ -91,11 +89,11 @@ python infer.py -d /path/to/dataset/ --ac  config/arch/CHOICE.yaml --checkpoint 
 To evaluate the overall IoU of the point clouds (of a specific split, which in semantic kitti can only be train and valid, since test is only run in our evaluation server):
 
 ```sh
-$ ./evaluate_iou.py -d /path/to/dataset -p /path/to/predictions/ --split valid
+$ python evaluate_iou.py -d /path/to/dataset -p /path/to/predictions/ --split valid
 ```
 
 To evaluate the border IoU of the point clouds (introduced in RangeNet++ paper):
 
 ```sh
-$ ./evaluate_biou.py -d /path/to/dataset -p /path/to/predictions/ --split valid --border 1 --conn 4
+$ python evaluate_biou.py -d /path/to/dataset -p /path/to/predictions/ --split valid --border 1 --conn 4
 ```
