@@ -33,7 +33,7 @@ def set_tensorboard(path):
     return writer
 
 class Trainer():
-  def __init__(self, ARCH, DATA, datadir, logdir, logger, pretrained=None, use_mps=True):
+  def __init__(self, ARCH, DATA, datadir, logdir, logger, pretrained=None):
     # parameters
     self.ARCH = ARCH
     self.DATA = DATA
@@ -41,7 +41,7 @@ class Trainer():
     self.log = logdir
     self.logger = logger
     self.pretrained = pretrained
-    self.use_mps = use_mps
+    self.use_mps = ARCH["model"]["use_mps"]
 
     self.writer = set_tensorboard(osp.join(logdir, 'tfrecord'))
 
@@ -66,7 +66,7 @@ class Trainer():
         self.loss_w[x_cl] = 0
     self.logger.info("Loss weights from content: ", self.loss_w.data)
 
-    self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), ARCH["model"]["dropout"])
+    self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), ARCH["model"]["dropout"], ARCH["model"]["use_mps"])
 
     # GPU?
     self.gpu = False
@@ -137,16 +137,29 @@ class Trainer():
     if self.pretrained is not None:
       try:
         w_dict = torch.load(self.pretrained)
-        self.model.load_state_dict(w_dict['model'])
-        self.optimizer.load_state_dict(w_dict['optim'])
-        self.scheduler.load_state_dict(w_dict['scheduler'])
-        self.start_epoch = w_dict['epoch']
+        #self.model.load_state_dict(w_dict['model'])
+        #self.optimizer.load_state_dict(w_dict['optim'])
+        #self.scheduler.load_state_dict(w_dict['scheduler'])
+        #self.start_epoch = w_dict['epoch']
+
+        self.load_params(w_dict, self.model, 'model')
+        #self.load_params(w_dict, self.optimizer, 'optim')
+        #self.load_params(w_dict, self.scheduler, 'scheduler')
+        #self.load_params(w_dict, self.start_epoch, 'epoch')
+
+
         self.logger.info("Successfully loaded model weights")
       except Exception as e:
         self.logger.warning()
         self.logger.warning("Couldn't load parameters, using random weights. Error: ", e)
         raise e
 
+  def load_params(self, w_dict, model, key):
+        pretrained_dict = w_dict[key]
+        model_dict = model.state_dict()
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+        model_dict.update(pretrained_dict) 
+        model.load_state_dict(pretrained_dict)
 
   def train(self):
 

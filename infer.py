@@ -15,14 +15,15 @@ from lib.user import *
 if __name__ == '__main__':
   parser = argparse.ArgumentParser("./infer.py")
   parser.add_argument(
-      '--dataset',
+      '--dataset', '-d',
       type=str,
-      required=True,
+      required=False,
+      default='data',
       help='Dataset to train with. No Default',
   )
 
   parser.add_argument(
-      '--arch_cfg',
+      '--arch_cfg', '-ac',
       type=str,
       required=True,
       default=None,
@@ -30,15 +31,15 @@ if __name__ == '__main__':
   )
 
   parser.add_argument(
-      '--data_cfg',
+      '--data_cfg', '-dc',
       type=str,
-      required=True,
-      default=None,
+      required=False,
+      default='config/labels/semantic-kitti.yaml',
       help='data config path'
   )
 
   parser.add_argument(
-      '--checkpoint',
+      '--checkpoint', '-c',
       type=str,
       required=True,
       default=None,
@@ -46,7 +47,7 @@ if __name__ == '__main__':
   )
 
   parser.add_argument(
-      '--log',
+      '--log', '-l',
       type=str,
       required=False,
       default='predictions',
@@ -54,7 +55,7 @@ if __name__ == '__main__':
   )
 
   parser.add_argument(
-      '--split',
+      '--split', '-s',
       type=str,
       required=False,
       default='valid',

@@ -27,7 +27,8 @@ if __name__ == '__main__':
   parser.add_argument(
       '--dataset', '-d',
       type=str,
-      required=True,
+      required=False,
+      default='data',
       help='Dataset to train with. No Default',
   )
   parser.add_argument(
@@ -100,10 +101,10 @@ if __name__ == '__main__':
 
   # does model folder exist?
   if FLAGS.pretrained is not None:
-    if os.path.isdir(FLAGS.pretrained):
-      logger.info("model folder exists! Using model from %s" % (FLAGS.pretrained))
+    if os.path.isfile(FLAGS.pretrained):
+      logger.info("model exists! Using model from %s" % (FLAGS.pretrained))
     else:
-      logger.warning("model folder doesnt exist! Start with random weights...")
+      logger.warning("model doesnt exist! Start with random weights...")
   else:
     logger.warning("No pretrained directory found.")
 
@@ -119,5 +120,5 @@ if __name__ == '__main__':
     quit()
 
   # create trainer and start the training
-  trainer = Trainer(ARCH, DATA, FLAGS.dataset, FLAGS.log, logger, FLAGS.pretrained, ARCH['model']['use_mps'])
+  trainer = Trainer(ARCH, DATA, FLAGS.dataset, FLAGS.log, logger, FLAGS.pretrained)
   trainer.train()
