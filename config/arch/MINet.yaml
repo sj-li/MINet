@@ -9,7 +9,7 @@ train:
   momentum: 0.9          # sgd momentum
   lr_decay: 0.995        # learning rate decay per epoch after initial cycle (from min lr)
   w_decay: 0.0001        # weight decay
-  batch_size: 10         # batch size
+  batch_size: 16         # batch size
   report_batch: 1        # every x batches, report loss
   report_epoch: 1        # every x epochs, report validation set
   epsilon_w: 0.001       # class weight w = 1 / (content + epsilon_w)
@@ -25,7 +25,7 @@ model:
   in_channels: 5
   dropout: 0.01
   bn_d: 0.01
-  use_mps: False
+  use_mps: True # False
 
 ################################################################################
 # postproc parameters
@@ -53,8 +53,44 @@ dataset:
     fov_up: 3
     fov_down: -25 
     img_prop:
-      width: 2048
-      height: 64
+      width: 1800 #1800 #2048
+      height: 40 #40 #64
+    img_means: #range,x,y,z,signal
+      - 12.12
+      - 10.88
+      - 0.23
+      - -1.04
+      - 0.21
+    img_stds: #range,x,y,z,signal
+      - 12.32
+      - 11.47
+      - 6.91
+      - 0.86
+      - 0.16
+dataset_poss:
+  labels: "SemanticPOSS"
+  scans: "SemanticPOSS"
+  max_points: 150000 # max of any scan in dataset   todo
+  sensor:
+    name: "Pandora"
+    type: "spherical" # projective
+    fov_up: 9
+    fov_down: -17
+    img_prop:
+      width: 1800
+      height: 40
+#    img_means: #range,x,y,z,signal
+#      - 10.98
+#      - 0.28
+#      - 0.78
+#      - -0.28
+#      - 0.03
+#    img_stds: #range,x,y,z,signal
+#      - 17.60
+#      - 12.81
+#      - 16.24
+#      - 1.27
+#      - 0.05
     img_means: #range,x,y,z,signal
       - 12.12
       - 10.88

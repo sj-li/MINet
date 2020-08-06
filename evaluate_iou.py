@@ -10,6 +10,8 @@ import torch
 
 from lib.utils.ioueval import iouEval
 from lib.utils.laserscan import SemLaserScan
+###
+from lib.dataset.SemanticPOSS import LaserScanPOSS
 
 # possible splits
 splits = ["train", "valid", "test"]
@@ -20,15 +22,17 @@ if __name__ == '__main__':
       '--dataset', '-d',
       type=str,
       required=False,
-      default="data",
+      # default="data",
+      default="/media/datasets/yij/DA_seg/SemanticPOSS/dataset",  # 'data',
       help='Dataset dir. No Default',
   )
   parser.add_argument(
       '--predictions', '-p',
       type=str,
-      required=None,
+      required=False,
+      default='predictions',
       help='Prediction dir. Same organization as dataset, but predictions in'
-      'each sequences "prediction" directory. No Default. If no option is set'
+      'each sequences "prediction" directory. No Default. If no option is set'      # todo: default?
       ' we look for the labels in the same directory as dataset'
   )
   parser.add_argument(
@@ -40,20 +44,28 @@ if __name__ == '__main__':
       help='Split to evaluate on. One of ' +
       str(splits) + '. Defaults to %(default)s',
   )
+  parser.add_argument(      ###
+      '--arch_cfg', '-ac',
+      type=str,
+      required=False,
+      default="config/arch/MINet.yaml",
+      help='arch config path'
+  )
   parser.add_argument(
       '--data_cfg', '-dc',
       type=str,
       required=False,
-      default="config/labels/semantic-kitti.yaml",
+      default="config/labels/DA_semantic-kitti.yaml",
       help='Dataset config file. Defaults to %(default)s',
   )
+
   parser.add_argument(
       '--limit', '-l',
       type=int,
       required=False,
       default=None,
-      help='Limit to the first "--limit" points of each scan. Useful for'
-      ' evaluating single scan from aggregated pointcloud.'
+      help='Limit to the first "--limit" points of each scan. Useful for'      
+      ' evaluating single scan from aggregated pointcloud.'  ## fixme? aggregated pointcloud?
       ' Defaults to %(default)s',
   )
 
@@ -92,7 +104,7 @@ if __name__ == '__main__':
   class_ignore = DATA["learning_ignore"]
   nr_classes = len(class_inv_remap)
 
-  # make lookup table for mapping
+  # make lookup table for mapping                       ## for vectorization
   maxkey = 0
   for key, data in class_remap.items():
     if key > maxkey:
@@ -114,13 +126,30 @@ if __name__ == '__main__':
       ignore.append(x_cl)
       print("Ignoring xentropy class ", x_cl, " in IoU evaluation")
 
-  # create evaluator
+  # create evaluator                                       ## todo
   device = torch.device("cpu")
   evaluator = iouEval(nr_classes, device, ignore)
   evaluator.reset()
 
   # get test set
-  test_sequences = DATA["split"][FLAGS.split]
+  if "KITTI" in FLAGS.dataset:                              ###
+    test_sequences = DATA["split"][FLAGS.split]
+  elif "POSS" in FLAGS.dataset:
+    test_sequences = DATA["split_poss"][FLAGS.split]
+  else:
+      print("Not supported yet. Please check your data path")
+
+  ###
+  ARCH = yaml.safe_load(open(FLAGS.arch_cfg, 'r'))
+  if "KITTI" in FLAGS.dataset:
+    H = ARCH["dataset"]["sensor"]["img_prop"]["height"]
+    W = ARCH["dataset"]["sensor"]["img_prop"]["width"]
+  elif "POSS" in FLAGS.dataset:
+    H = ARCH["dataset_poss"]["sensor"]["img_prop"]["height"]
+    W = ARCH["dataset_poss"]["sensor"]["img_prop"]["width"]
+  else:
+      print("Not supported yet. Please check your arch_cfg")
+
 
   # get scan paths
   scan_names = []
@@ -161,38 +190,63 @@ if __name__ == '__main__':
     pred_names.extend(seq_pred_names)
   # print(pred_names)
 
+
   # check that I have the same number of files
-  # print("labels: ", len(label_names))
-  # print("predictions: ", len(pred_names))
+  print("labels: ", len(label_names))
+  print("predictions: ", len(pred_names))
   assert(len(label_names) == len(scan_names) and
          len(label_names) == len(pred_names))
 
   print("Evaluating sequences: ")
   # open each file, get the tensor, and make the iou comparison
-  for scan_file, label_file, pred_file in zip(scan_names, label_names, pred_names):
-    print("evaluating label ", label_file, "with", pred_file)
-    # open label
-    label = SemLaserScan(project=False)
-    label.open_scan(scan_file)
-    label.open_label(label_file)
-    u_label_sem = remap_lut[label.sem_label]  # remap to xentropy format
-    if FLAGS.limit is not None:
-      u_label_sem = u_label_sem[:FLAGS.limit]
+  ###
+  if "POSS" in FLAGS.dataset:
+  # if 0:
+      for scan_file, label_file, pred_file in zip(scan_names, label_names, pred_names):         ##
+        # print("evaluating label ", label_file, "with", pred_file)
+        # open label
+        label = LaserScanPOSS(poss2kitti=DATA['poss2kitti'])
+        label.open_scan(scan_file, label_file, tag_file=None)
 
-    # open prediction
-    pred = SemLaserScan(project=False)
-    pred.open_scan(scan_file)
-    pred.open_label(pred_file)
-    u_pred_sem = remap_lut[pred.sem_label]  # remap to xentropy format
-    if FLAGS.limit is not None:
-      u_pred_sem = u_pred_sem[:FLAGS.limit]
+        u_label_sem = remap_lut[label.sem_label]  # remap to xentropy format
+        if FLAGS.limit is not None:
+          u_label_sem = u_label_sem[:FLAGS.limit]
 
-    # add single scan to evaluation
-    evaluator.addBatch(u_pred_sem, u_label_sem)
+        # open prediction
+        pred = LaserScanPOSS()
+        pred.open_scan(scan_file, pred_file, tag_file=None)
 
-  # when I am done, print the evaluation
+        u_pred_sem = remap_lut[pred.sem_label]  # remap to xentropy format
+        if FLAGS.limit is not None:
+          u_pred_sem = u_pred_sem[:FLAGS.limit]
+
+        # add single scan to evaluation
+        evaluator.addBatch(u_pred_sem, u_label_sem)         ## todo:?
+  else:
+      for scan_file, label_file, pred_file in zip(scan_names, label_names, pred_names):         ##
+        print("evaluating label ", label_file, "with", pred_file)
+        # open label
+        label = SemLaserScan(project=False, H=H, W=W)
+        label.open_scan(scan_file)
+        label.open_label(label_file)
+        u_label_sem = remap_lut[label.sem_label]  # remap to xentropy format
+        if FLAGS.limit is not None:
+          u_label_sem = u_label_sem[:FLAGS.limit]
+
+        # open prediction
+        pred = SemLaserScan(project=False, H=H, W=W)
+        pred.open_scan(scan_file)
+        pred.open_label(pred_file)
+        u_pred_sem = remap_lut[pred.sem_label]  # remap to xentropy format
+        if FLAGS.limit is not None:
+          u_pred_sem = u_pred_sem[:FLAGS.limit]
+
+        # add single scan to evaluation
+        evaluator.addBatch(u_pred_sem, u_label_sem)         ## todo:?
+
+  # when I am done, print the evaluation                ## todo:?
   m_accuracy = evaluator.getacc()
-  m_jaccard, class_jaccard = evaluator.getIoU()
+  m_jaccard, class_jaccard = evaluator.getIoU()         ## todo:? what is the meaning of jaccard
 
   print('Validation set:\n'
         'Acc avg {m_accuracy:.3f}\n'
@@ -204,7 +258,7 @@ if __name__ == '__main__':
       print('IoU class {i:} [{class_str:}] = {jacc:.3f}'.format(
           i=i, class_str=class_strings[class_inv_remap[i]], jacc=jacc))
 
-  # print for spreadsheet
+  # print for spreadsheet                               ## todo:?
   print("*" * 80)
   print("below can be copied straight for paper table")
   for i, jacc in enumerate(class_jaccard):

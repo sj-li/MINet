@@ -33,6 +33,19 @@ class Parser():
     self.gt = gt
     self.shuffle_train = shuffle_train
 
+    ###
+    self.poss2kitti = None
+    if "POSS" in self.root:
+        from lib.dataset.SemanticPOSS import SemanticPOSS
+        self.DATASET_TYPE = SemanticPOSS
+        self.poss2kitti = data_cfg["poss2kitti"]
+        print("Mapping labels from SemanticPOSS to SemanticKITTI")
+        self.valid_sequences = data_cfg["split_poss"]["valid"]
+        self.test_sequences = data_cfg["split_poss"]["test"]
+
+        self.sensor = arch_cfg["dataset_poss"]["sensor"]
+        self.max_points = arch_cfg["dataset_poss"]["max_points"]
+
     # number of classes that matters is the one for xentropy
     self.nclasses = len(self.learning_map_inv)
 
@@ -45,7 +58,8 @@ class Parser():
                                        learning_map_inv=self.learning_map_inv,
                                        sensor=self.sensor,
                                        max_points=self.max_points,
-                                       gt=self.gt)
+                                       gt=self.gt,
+                                           poss2kitti=self.poss2kitti)
 
     self.trainloader = torch.utils.data.DataLoader(self.train_dataset,
                                                    batch_size=self.batch_size,
@@ -64,7 +78,7 @@ class Parser():
                                        learning_map_inv=self.learning_map_inv,
                                        sensor=self.sensor,
                                        max_points=self.max_points,
-                                       gt=self.gt, skip=0)
+                                       gt=self.gt, skip=0, poss2kitti=self.poss2kitti)  ###poss2kitti
 
     self.validloader = torch.utils.data.DataLoader(self.valid_dataset,
                                                    batch_size=self.batch_size,
@@ -84,7 +98,7 @@ class Parser():
                                         learning_map_inv=self.learning_map_inv,
                                         sensor=self.sensor,
                                         max_points=self.max_points,
-                                        gt=False)
+                                        gt=False, poss2kitti=self.poss2kitti)   ###poss2kitti
 
       self.testloader = torch.utils.data.DataLoader(self.test_dataset,
                                                     batch_size=self.batch_size,
