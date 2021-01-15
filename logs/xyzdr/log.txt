@@ -1,0 +1,94 @@
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:74 - ----------
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:75 - INTERFACE:
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:76 - dataset
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:77 - arch_cfg
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:78 - data_cfg
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:79 - log
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:80 - pretrained
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:81 - ----------
+
+2021-01-15 20:51:01.471 | INFO     | __main__:<module>:85 - Opening arch config file config/arch/MINet-pretrain.yaml
+2021-01-15 20:51:01.477 | INFO     | __main__:<module>:94 - Opening data config file config/labels/semantic-kitti.yaml
+2021-01-15 20:51:01.498 | WARNING  | __main__:<module>:108 - No pretrained directory found.
+2021-01-15 20:51:01.498 | INFO     | __main__:<module>:113 - Copying files to logs/xyzdr for further reference.
+2021-01-15 20:51:01.812 | INFO     | lib.trainer:__init__:66 - Loss weights from content: 
+2021-01-15 20:51:01.871 | INFO     | lib.trainer:__init__:76 - Training in device: 
+2021-01-15 20:51:09.166 | INFO     | lib.trainer:__init__:93 - Total number of parameters: 1041973
+2021-01-15 20:51:09.167 | INFO     | lib.trainer:__init__:94 - Total number of parameters requires_grad: 1041973
+2021-01-15 20:51:09.174 | INFO     | lib.trainer:train:161 - Ignoring class 
+2021-01-15 20:51:18.929 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.727e-03 | Update: 2.930e-01 mean,4.514e-01 std | Epoch: [0][0/11] | Loss 0.5291 (0.5291)
+2021-01-15 20:51:19.583 | INFO     | lib.trainer:train_epoch:329 - Lr: 5.455e-03 | Update: 1.322e-01 mean,2.014e-01 std | Epoch: [0][1/11] | Loss 0.5345 (0.5318)
+2021-01-15 20:51:20.215 | INFO     | lib.trainer:train_epoch:329 - Lr: 8.182e-03 | Update: 7.445e-02 mean,1.138e-01 std | Epoch: [0][2/11] | Loss 0.4959 (0.5198)
+2021-01-15 20:51:20.850 | INFO     | lib.trainer:train_epoch:329 - Lr: 1.091e-02 | Update: 4.737e-02 mean,7.445e-02 std | Epoch: [0][3/11] | Loss 0.4540 (0.5034)
+2021-01-15 20:51:21.482 | INFO     | lib.trainer:train_epoch:329 - Lr: 1.364e-02 | Update: 3.188e-02 mean,4.988e-02 std | Epoch: [0][4/11] | Loss 0.3922 (0.4811)
+2021-01-15 20:51:22.115 | INFO     | lib.trainer:train_epoch:329 - Lr: 1.636e-02 | Update: 2.777e-02 mean,4.283e-02 std | Epoch: [0][5/11] | Loss 0.3935 (0.4665)
+2021-01-15 20:51:22.749 | INFO     | lib.trainer:train_epoch:329 - Lr: 1.909e-02 | Update: 2.193e-02 mean,3.442e-02 std | Epoch: [0][6/11] | Loss 0.3950 (0.4563)
+2021-01-15 20:51:23.388 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.182e-02 | Update: 1.456e-02 mean,2.302e-02 std | Epoch: [0][7/11] | Loss 0.2909 (0.4356)
+2021-01-15 20:51:24.041 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.455e-02 | Update: 1.166e-02 mean,1.855e-02 std | Epoch: [0][8/11] | Loss 0.2502 (0.4150)
+2021-01-15 20:51:24.674 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.727e-02 | Update: 1.164e-02 mean,1.791e-02 std | Epoch: [0][9/11] | Loss 0.2415 (0.3977)
+2021-01-15 20:51:25.338 | INFO     | lib.trainer:train_epoch:329 - Lr: 3.000e-02 | Update: 1.133e-02 mean,1.775e-02 std | Epoch: [0][10/11] | Loss 0.2303 (0.3825)
+2021-01-15 20:51:25.521 | INFO     | lib.trainer:train:196 - ********************************************************************************
+2021-01-15 20:51:30.816 | INFO     | lib.trainer:validate:381 - Validation set:
+Time avg per batch 0.451
+Loss avg 0.2902
+2021-01-15 20:51:30.818 | INFO     | lib.trainer:train:219 - ********************************************************************************
+2021-01-15 20:51:34.653 | INFO     | lib.trainer:train_epoch:329 - Lr: 3.000e-02 | Update: 8.973e-03 mean,1.401e-02 std | Epoch: [1][0/11] | Loss 0.1975 (0.1975)
+2021-01-15 20:51:35.376 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.999e-02 | Update: 7.030e-03 mean,1.065e-02 std | Epoch: [1][1/11] | Loss 0.1679 (0.1827)
+2021-01-15 20:51:36.182 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.997e-02 | Update: 7.111e-03 mean,1.105e-02 std | Epoch: [1][2/11] | Loss 0.1772 (0.1809)
+2021-01-15 20:51:36.829 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.996e-02 | Update: 6.148e-03 mean,9.971e-03 std | Epoch: [1][3/11] | Loss 0.1632 (0.1764)
+2021-01-15 20:51:37.472 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.995e-02 | Update: 3.259e-03 mean,5.974e-03 std | Epoch: [1][4/11] | Loss 0.1418 (0.1695)
+2021-01-15 20:51:38.115 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.993e-02 | Update: 2.642e-03 mean,4.329e-03 std | Epoch: [1][5/11] | Loss 0.1231 (0.1618)
+2021-01-15 20:51:38.908 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.992e-02 | Update: 2.740e-03 mean,5.298e-03 std | Epoch: [1][6/11] | Loss 0.1328 (0.1576)
+2021-01-15 20:51:39.570 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.990e-02 | Update: 2.795e-03 mean,5.771e-03 std | Epoch: [1][7/11] | Loss 0.1410 (0.1556)
+2021-01-15 20:51:40.206 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.989e-02 | Update: 2.040e-03 mean,3.379e-03 std | Epoch: [1][8/11] | Loss 0.1161 (0.1512)
+2021-01-15 20:51:40.845 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.988e-02 | Update: 1.876e-03 mean,3.371e-03 std | Epoch: [1][9/11] | Loss 0.1156 (0.1476)
+2021-01-15 20:51:41.486 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.986e-02 | Update: 1.693e-03 mean,3.277e-03 std | Epoch: [1][10/11] | Loss 0.1156 (0.1447)
+2021-01-15 20:51:41.605 | INFO     | lib.trainer:train:196 - ********************************************************************************
+2021-01-15 20:51:47.045 | INFO     | lib.trainer:validate:381 - Validation set:
+Time avg per batch 0.468
+Loss avg 0.1169
+2021-01-15 20:51:47.047 | INFO     | lib.trainer:train:219 - ********************************************************************************
+2021-01-15 20:51:50.479 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.985e-02 | Update: 1.529e-03 mean,3.511e-03 std | Epoch: [2][0/11] | Loss 0.1015 (0.1015)
+2021-01-15 20:51:51.157 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.984e-02 | Update: 1.239e-03 mean,2.473e-03 std | Epoch: [2][1/11] | Loss 0.0935 (0.0975)
+2021-01-15 20:51:51.961 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.982e-02 | Update: 1.235e-03 mean,2.409e-03 std | Epoch: [2][2/11] | Loss 0.0978 (0.0976)
+2021-01-15 20:51:52.609 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.981e-02 | Update: 1.055e-03 mean,2.424e-03 std | Epoch: [2][3/11] | Loss 0.0929 (0.0965)
+2021-01-15 20:51:53.244 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.980e-02 | Update: 1.139e-03 mean,2.327e-03 std | Epoch: [2][4/11] | Loss 0.1010 (0.0974)
+2021-01-15 20:51:53.889 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.978e-02 | Update: 6.943e-04 mean,1.342e-03 std | Epoch: [2][5/11] | Loss 0.0828 (0.0949)
+2021-01-15 20:51:54.691 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.977e-02 | Update: 7.601e-04 mean,1.768e-03 std | Epoch: [2][6/11] | Loss 0.0865 (0.0937)
+2021-01-15 20:51:55.348 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.975e-02 | Update: 9.476e-04 mean,2.362e-03 std | Epoch: [2][7/11] | Loss 0.0829 (0.0924)
+2021-01-15 20:51:56.004 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.974e-02 | Update: 7.432e-04 mean,1.566e-03 std | Epoch: [2][8/11] | Loss 0.0821 (0.0912)
+2021-01-15 20:51:56.641 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.973e-02 | Update: 6.330e-04 mean,1.197e-03 std | Epoch: [2][9/11] | Loss 0.0731 (0.0894)
+2021-01-15 20:51:57.275 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.971e-02 | Update: 7.169e-04 mean,1.915e-03 std | Epoch: [2][10/11] | Loss 0.0787 (0.0885)
+2021-01-15 20:51:57.398 | INFO     | lib.trainer:train:196 - ********************************************************************************
+2021-01-15 20:52:02.696 | INFO     | lib.trainer:validate:381 - Validation set:
+Time avg per batch 0.452
+Loss avg 0.0722
+2021-01-15 20:52:02.698 | INFO     | lib.trainer:train:219 - ********************************************************************************
+2021-01-15 20:52:06.433 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.970e-02 | Update: 7.552e-04 mean,2.077e-03 std | Epoch: [3][0/11] | Loss 0.0709 (0.0709)
+2021-01-15 20:52:07.134 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.969e-02 | Update: 6.698e-04 mean,1.674e-03 std | Epoch: [3][1/11] | Loss 0.0757 (0.0733)
+2021-01-15 20:52:07.905 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.967e-02 | Update: 5.297e-04 mean,1.165e-03 std | Epoch: [3][2/11] | Loss 0.0713 (0.0726)
+2021-01-15 20:52:08.564 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.966e-02 | Update: 6.466e-04 mean,1.264e-03 std | Epoch: [3][3/11] | Loss 0.0733 (0.0728)
+2021-01-15 20:52:09.225 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.965e-02 | Update: 5.708e-04 mean,1.280e-03 std | Epoch: [3][4/11] | Loss 0.0710 (0.0725)
+2021-01-15 20:52:09.863 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.963e-02 | Update: 6.162e-04 mean,1.342e-03 std | Epoch: [3][5/11] | Loss 0.0714 (0.0723)
+2021-01-15 20:52:10.655 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.962e-02 | Update: 6.775e-04 mean,1.498e-03 std | Epoch: [3][6/11] | Loss 0.0673 (0.0716)
+2021-01-15 20:52:11.303 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.961e-02 | Update: 4.148e-04 mean,8.443e-04 std | Epoch: [3][7/11] | Loss 0.0637 (0.0706)
+2021-01-15 20:52:11.944 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.959e-02 | Update: 4.588e-04 mean,1.155e-03 std | Epoch: [3][8/11] | Loss 0.0585 (0.0692)
+2021-01-15 20:52:12.579 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.958e-02 | Update: 6.794e-04 mean,1.607e-03 std | Epoch: [3][9/11] | Loss 0.0664 (0.0690)
+2021-01-15 20:52:13.215 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.957e-02 | Update: 4.383e-04 mean,1.098e-03 std | Epoch: [3][10/11] | Loss 0.0633 (0.0684)
+2021-01-15 20:52:13.314 | INFO     | lib.trainer:train:196 - ********************************************************************************
+2021-01-15 20:52:18.681 | INFO     | lib.trainer:validate:381 - Validation set:
+Time avg per batch 0.460
+Loss avg 0.0581
+2021-01-15 20:52:18.683 | INFO     | lib.trainer:train:219 - ********************************************************************************
+2021-01-15 20:52:22.451 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.955e-02 | Update: 3.240e-04 mean,6.279e-04 std | Epoch: [4][0/11] | Loss 0.0574 (0.0574)
+2021-01-15 20:52:23.178 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.954e-02 | Update: 4.211e-04 mean,1.055e-03 std | Epoch: [4][1/11] | Loss 0.0597 (0.0585)
+2021-01-15 20:52:23.979 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.953e-02 | Update: 3.909e-04 mean,9.744e-04 std | Epoch: [4][2/11] | Loss 0.0597 (0.0589)
+2021-01-15 20:52:24.666 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.951e-02 | Update: 4.515e-04 mean,1.232e-03 std | Epoch: [4][3/11] | Loss 0.0595 (0.0591)
+2021-01-15 20:52:25.350 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.950e-02 | Update: 4.307e-04 mean,9.212e-04 std | Epoch: [4][4/11] | Loss 0.0616 (0.0596)
+2021-01-15 20:52:26.018 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.948e-02 | Update: 3.947e-04 mean,9.216e-04 std | Epoch: [4][5/11] | Loss 0.0585 (0.0594)
+2021-01-15 20:52:26.840 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.947e-02 | Update: 3.905e-04 mean,9.490e-04 std | Epoch: [4][6/11] | Loss 0.0575 (0.0591)
+2021-01-15 20:52:27.477 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.946e-02 | Update: 3.061e-04 mean,6.832e-04 std | Epoch: [4][7/11] | Loss 0.0532 (0.0584)
+2021-01-15 20:52:28.114 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.944e-02 | Update: 2.675e-04 mean,5.914e-04 std | Epoch: [4][8/11] | Loss 0.0546 (0.0580)
+2021-01-15 20:52:28.749 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.943e-02 | Update: 3.229e-04 mean,6.797e-04 std | Epoch: [4][9/11] | Loss 0.0503 (0.0572)
+2021-01-15 20:52:29.386 | INFO     | lib.trainer:train_epoch:329 - Lr: 2.942e-02 | Update: 3.250e-04 mean,7.237e-04 std | Epoch: [4][10/11] | Loss 0.0519 (0.0567)
+2021-01-15 20:52:29.496 | INFO     | lib.trainer:train:196 - ********************************************************************************

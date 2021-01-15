@@ -17,7 +17,6 @@ import cv2
 import os
 import os.path as osp
 import numpy as np
-from matplotlib import pyplot as plt
 
 # from .utils.logger import Logger
 from .utils.avgmeter import *
@@ -66,7 +65,7 @@ class Trainer():
         self.loss_w[x_cl] = 0
     self.logger.info("Loss weights from content: ", self.loss_w.data)
 
-    self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), ARCH["model"]["dropout"])
+    self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], 5, ARCH["model"]["dropout"])
 
     # GPU?
     self.gpu = False
@@ -97,7 +96,8 @@ class Trainer():
 
     # loss
     if "loss" in self.ARCH["train"].keys() and self.ARCH["train"]["loss"] == "xentropy":
-      self.criterion = nn.NLLLoss(weight=self.loss_w).to(self.device)
+      #self.criterion = nn.NLLLoss(weight=self.loss_w).to(self.device)
+      self.criterion = nn.MSELoss().to(self.device)
       self.ls = Lovasz_softmax(ignore=0).to(self.device)
     else:
       raise Exception('Loss not defined in config file')
@@ -245,15 +245,20 @@ class Trainer():
     for i, (in_vol, proj_mask, proj_labels, _, path_seq, path_name, _, _, proj_range, _, _, _, _, _, _, edge) in enumerate(train_loader):
         # measure data loading time
       data_time.update(time.time() - end)
+      b, c, h, w = in_vol.shape
+      mask = torch.randn(b, 1, h, w) > 0
+      mask = mask.float()
       if not self.multi_gpu and self.gpu:
         in_vol = in_vol.cuda()
         proj_mask = proj_mask.cuda()
+        mask = mask.cuda()
       if self.gpu:
         proj_labels = proj_labels.cuda(non_blocking=True).long()
 
       # compute output
       output, skips = model(in_vol)
-      loss = self.criterion(torch.log(output.clamp(min=1e-8)), proj_labels) + self.ls(output, proj_labels.long())
+      #loss = self.criterion(torch.log(output.clamp(min=1e-8)), proj_labels) + self.ls(output, proj_labels.long())
+      loss = self.criterion(output*(1 - mask).cuda(), in_vol.cuda()*(1 - mask).cuda())
 
       if self.use_mps:
         fsloss = loss
@@ -290,15 +295,7 @@ class Trainer():
 
       # measure accuracy and record loss
       loss = loss.mean()
-      with torch.no_grad():
-        evaluator.reset()
-        argmax = output.argmax(dim=1)
-        evaluator.addBatch(argmax, proj_labels)
-        accuracy = evaluator.getacc()
-        jaccard, class_jaccard = evaluator.getIoU()
       losses.update(loss.item(), in_vol.size(0))
-      acc.update(accuracy.item(), in_vol.size(0))
-      iou.update(jaccard.item(), in_vol.size(0))
 
 
       # measure elapsed time
@@ -326,11 +323,9 @@ class Trainer():
         self.logger.info('Lr: {lr:.3e} | '
               'Update: {umean:.3e} mean,{ustd:.3e} std | '
               'Epoch: [{0}][{1}/{2}] | '
-              'Loss {loss.val:.4f} ({loss.avg:.4f}) | '
-              'acc {acc.val:.3f} ({acc.avg:.3f}) | '
-              'IoU {iou.val:.3f} ({iou.avg:.3f})'.format(
+              'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
                   epoch, i, len(train_loader), batch_time=batch_time,
-                  data_time=data_time, loss=losses, acc=acc, iou=iou, lr=lr,
+                  data_time=data_time, loss=losses, lr=lr,
                   umean=update_mean, ustd=update_std))
 
       # step scheduler
@@ -360,6 +355,9 @@ class Trainer():
     with torch.no_grad():
       end = time.time()
       for i, (in_vol, proj_mask, proj_labels, _, path_seq, path_name, _, _, proj_range, _, _, _, _, _, _, edge) in enumerate(val_loader):
+        b, c, h, w = in_vol.shape
+        mask = torch.randn(b, 1, h, w) > 0
+        mask = mask.float()
         if not self.multi_gpu and self.gpu:
           in_vol = in_vol.cuda()
           proj_mask = proj_mask.cuda()
@@ -368,32 +366,17 @@ class Trainer():
 
         # compute output
         output, skips = model(in_vol)
-        loss = self.criterion(torch.log(output.clamp(min=1e-8)), proj_labels)
+        #loss = self.criterion(torch.log(output.clamp(min=1e-8)), proj_labels)
+        loss = self.criterion(output*(1 - mask).cuda(), in_vol.cuda()*(1 - mask).cuda())
 
-        # measure accuracy and record loss
-        argmax = output.argmax(dim=1)
-        evaluator.addBatch(argmax, proj_labels)
         losses.update(loss.mean().item(), in_vol.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
-      accuracy = evaluator.getacc()
-      jaccard, class_jaccard = evaluator.getIoU()
-      acc.update(accuracy.item(), in_vol.size(0))
-      iou.update(jaccard.item(), in_vol.size(0))
-
       self.logger.info('Validation set:\n'
             'Time avg per batch {batch_time.avg:.3f}\n'
-            'Loss avg {loss.avg:.4f}\n'
-            'Acc avg {acc.avg:.3f}\n'
-            'IoU avg {iou.avg:.3f}'.format(batch_time=batch_time,
-                                           loss=losses,
-                                           acc=acc, iou=iou))
-      # print also classwise
-      for i, jacc in enumerate(class_jaccard):
-        self.logger.info('IoU class {i:} [{class_str:}] = {jacc:.3f}'.format(
-            i=i, class_str=class_func(i), jacc=jacc))
-
+            'Loss avg {loss.avg:.4f}'.format(batch_time=batch_time,
+                                           loss=losses))
     return acc.avg, iou.avg, losses.avg

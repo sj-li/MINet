@@ -396,7 +396,7 @@ class MINet(nn.Module):
 
         x = self.dp(x)
         x = self.classifier(x)
-        x = F.softmax(x, dim=1)
+        #x = F.softmax(x, dim=1)
 
         skips = {'edge': edge, 'seg': seg}
 
