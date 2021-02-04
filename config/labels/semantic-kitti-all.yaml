@@ -1,5 +1,5 @@
 # This file is covered by the LICENSE file in the root of this project.
-name: "SemanticKiti"
+name: "SemanticKitti"
 labels: 
   0 : "unlabeled"
   1 : "outlier"

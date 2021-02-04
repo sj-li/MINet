@@ -259,16 +259,7 @@ class MINet(nn.Module):
 
         self.in_channels = in_channels
 
-        self.conv_in = nn.ModuleList(
-                [
-                    nn.Sequential(
-                        nn.Conv2d(1, 4, 3, padding=1),
-                        nn.BatchNorm2d(4, momentum=BN_MOMENTUM),
-                        nn.ReLU(inplace=True),
-                        )
-                    for i in range(self.in_channels)
-                    ]
-                )
+        self.conv_in = nn.Conv2d(25, 20, 3, padding=1)
 
         self.down = nn.Sequential(
             Block(3, 20, 20, 20, nn.ReLU(inplace=True), None, 1),
@@ -339,14 +330,7 @@ class MINet(nn.Module):
 
 
     def forward(self, x):
-        xs = []
-        #for i in range(self.in_channels):
-        #    xs.append(self.conv_in[i](x[i,:,:,:,:]))
- 
-        for i in range(self.in_channels):
-            xs.append(self.conv_in[i](x[:,i,:,:].unsqueeze(1)))
-        xs = torch.cat(xs, 1)
-
+        xs = self.conv_in(x)
 
         x = self.down(xs)
 

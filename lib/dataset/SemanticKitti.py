@@ -41,6 +41,7 @@ class SemanticKitti(Dataset):
     self.sensor = sensor
     self.sensor_img_H = sensor["img_prop"]["height"]
     self.sensor_img_W = sensor["img_prop"]["width"]
+    self.bank = sensor["bank"]
     self.sensor_img_means = torch.tensor(sensor["img_means"],
                                          dtype=torch.float)
     self.sensor_img_stds = torch.tensor(sensor["img_stds"],
@@ -127,6 +128,31 @@ class SemanticKitti(Dataset):
                                                     self.sequences))
 
   def __getitem__(self, index):
+      pad = 0 if index > self.bank else self.bank - index
+      
+      start_id = max(0, index - self.bank)
+      end_id = index
+
+      projs = []
+
+      proj_main, proj_mask, proj_labels, unproj_labels, path_seq, path_name, proj_x, proj_y, proj_range, unproj_range, proj_xyz, unproj_xyz, proj_remission, unproj_remissions, unproj_n_points, edge = self.get_one_item(index)
+
+      if pad > 0:
+          for p in range(pad):
+              projs.append(torch.zeros_like(proj_main))
+
+      for i in range(start_id, end_id):
+          data = self.get_one_item(i)
+          projs.append(data[0])
+
+      projs.append(proj_main)
+      proj = torch.cat(projs)
+
+      return proj, proj_mask, proj_labels, unproj_labels, path_seq, path_name, proj_x, proj_y, proj_range, unproj_range, proj_xyz, unproj_xyz, proj_remission, unproj_remissions, unproj_n_points, edge
+
+
+
+  def get_one_item(self, index):
     # get item in tensor shape
     scan_file = self.scan_files[index]
     edge_file = self.edge_files[index]
