@@ -18,6 +18,7 @@ import os
 import os.path as osp
 import numpy as np
 from matplotlib import pyplot as plt
+import random
 
 # from .utils.logger import Logger
 from .utils.avgmeter import *
@@ -180,6 +181,15 @@ class Trainer():
 
   def train(self):
 
+    torch.manual_seed(0)
+    np.random.seed(0)
+    random.seed(0)
+    torch.cuda.manual_seed(0)
+    torch.cuda.manual_seed_all(0)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.set_deterministic(True)
+
     # accuracy and IoU stuff
     best_train_iou = 0.0
     best_val_iou = 0.0
@@ -294,14 +304,14 @@ class Trainer():
         sloss = 0
         for j, s in enumerate(skips['sup_static']):
           proj_labels_small = F.interpolate(proj_labels_static.unsqueeze(1).float(), size=(skips['sup_static'][j].size(2), skips['sup_static'][j].size(3)), mode='nearest').long().squeeze()
-          l = self.criterion_s(torch.log(F.softmax(s, dim=1).clamp(min=1e-8)), proj_labels_small)
+          l = self.criterion_s(torch.log(F.softmax(s, dim=1).clamp(min=1e-8)), proj_labels_small) + self.ls(s, proj_labels_small.long())
           sloss = sloss + l
         sloss *= 0.5
 
         mloss = 0
         for j, s in enumerate(skips['sup_moving']):
           mot_labels_small = F.interpolate(proj_labels_moving.unsqueeze(1).float(), size=(skips['sup_moving'][j].size(2), skips['sup_moving'][j].size(3)), mode='nearest').long().squeeze()
-          l = self.criterion_m(torch.log(F.softmax(s, dim=1).clamp(min=1e-8)), mot_labels_small)
+          l = self.criterion_m(torch.log(F.softmax(s, dim=1).clamp(min=1e-8)), mot_labels_small) + self.ls(s, mot_labels_small.long())
           mloss = mloss + l
         mloss *= 0.5
 
