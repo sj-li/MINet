@@ -27,6 +27,8 @@ class SemanticKitti(Dataset):
                labels,        # label dict: (e.g 10: "car")
                color_map,     # colors dict bgr (e.g 10: [255, 0, 0])
                learning_map,  # classes to learn (0 to N-1 for xentropy)
+               learning_map_moving,  # classes to learn (0 to N-1 for xentropy)
+               learning_map_static,  # classes to learn (0 to N-1 for xentropy)
                learning_map_inv,    # inverse of previous (recover labels)
                sensor,              # sensor to parse scans from
                max_points=150000,   # max number of points present in dataset
@@ -38,6 +40,8 @@ class SemanticKitti(Dataset):
     self.color_map = color_map
     self.learning_map = learning_map
     self.learning_map_inv = learning_map_inv
+    self.learning_map_moving = learning_map_moving
+    self.learning_map_static = learning_map_static
     self.sensor = sensor
     self.sensor_img_H = sensor["img_prop"]["height"]
     self.sensor_img_W = sensor["img_prop"]["width"]
@@ -135,7 +139,7 @@ class SemanticKitti(Dataset):
 
       projs = []
 
-      proj_main, proj_mask, proj_labels, unproj_labels, path_seq, path_name, proj_x, proj_y, proj_range, unproj_range, proj_xyz, unproj_xyz, proj_remission, unproj_remissions, unproj_n_points, edge = self.get_one_item(index)
+      proj_main, proj_mask, proj_labels, proj_labels_moving, proj_labels_static, unproj_labels, unproj_labels_moving, unproj_labels_static, path_seq, path_name, proj_x, proj_y, proj_range, unproj_range, proj_xyz, unproj_xyz, proj_remission, unproj_remissions, unproj_n_points, edge = self.get_one_item(index)
 
       if pad > 0:
           for p in range(pad):
@@ -148,10 +152,8 @@ class SemanticKitti(Dataset):
       projs.append(proj_main)
       proj = torch.cat(projs)
 
-      return proj, proj_mask, proj_labels, unproj_labels, path_seq, path_name, proj_x, proj_y, proj_range, unproj_range, proj_xyz, unproj_xyz, proj_remission, unproj_remissions, unproj_n_points, edge
-
-
-
+      return proj, proj_mask, proj_labels, proj_labels_moving, proj_labels_static, unproj_labels, unproj_labels_moving, unproj_labels_static, path_seq, path_name, proj_x, proj_y, proj_range, unproj_range, proj_xyz, unproj_xyz, proj_remission, unproj_remissions, unproj_n_points, edge
+  
   def get_one_item(self, index):
     # get item in tensor shape
     scan_file = self.scan_files[index]
@@ -182,7 +184,12 @@ class SemanticKitti(Dataset):
       scan.open_label(label_file)
       # map unused classes to used classes (also for projection)
       scan.sem_label = self.map(scan.sem_label, self.learning_map)
+      scan.sem_label_moving = self.map(scan.sem_label, self.learning_map)
+      scan.sem_label_static = self.map(scan.sem_label, self.learning_map)
+
       scan.proj_sem_label = self.map(scan.proj_sem_label, self.learning_map)
+      scan.proj_sem_label_moving = self.map(scan.proj_sem_label, self.learning_map_moving)
+      scan.proj_sem_label_static = self.map(scan.proj_sem_label, self.learning_map_static)
 
     # make a tensor of the uncompressed data (with the max num points)
     unproj_n_points = scan.points.shape[0]
@@ -195,8 +202,17 @@ class SemanticKitti(Dataset):
     if self.gt:
       unproj_labels = torch.full([self.max_points], -1.0, dtype=torch.int32)
       unproj_labels[:unproj_n_points] = torch.from_numpy(scan.sem_label)
+
+      unproj_labels_moving = torch.full([self.max_points], -1.0, dtype=torch.int32)
+      unproj_labels_moving[:unproj_n_points] = torch.from_numpy(scan.sem_label_moving)
+
+      unproj_labels_static = torch.full([self.max_points], -1.0, dtype=torch.int32)
+      unproj_labels_static[:unproj_n_points] = torch.from_numpy(scan.sem_label_static)
+
     else:
       unproj_labels = []
+      unproj_labels_moving = []
+      unproj_labels_static = []
 
     # get points and labels
     proj_range = torch.from_numpy(scan.proj_range).clone()
@@ -206,8 +222,16 @@ class SemanticKitti(Dataset):
     if self.gt:
       proj_labels = torch.from_numpy(scan.proj_sem_label).clone()
       proj_labels = proj_labels * proj_mask
+
+      proj_labels_moving = torch.from_numpy(scan.proj_sem_label_moving).clone()
+      proj_labels_moving = proj_labels_moving * proj_mask
+
+      proj_labels_static = torch.from_numpy(scan.proj_sem_label_static).clone()
+      proj_labels_static = proj_labels_static * proj_mask
     else:
       proj_labels = []
+      proj_labels_moving = []
+      proj_labels_static = []
     proj_x = torch.full([self.max_points], -1, dtype=torch.long)
     proj_x[:unproj_n_points] = torch.from_numpy(scan.proj_x)
     proj_y = torch.full([self.max_points], -1, dtype=torch.long)
@@ -229,7 +253,7 @@ class SemanticKitti(Dataset):
     # print("path_name", path_name)
 
     # return
-    return proj, proj_mask, proj_labels, unproj_labels, path_seq, path_name, proj_x, proj_y, proj_range, unproj_range, proj_xyz, unproj_xyz, proj_remission, unproj_remissions, unproj_n_points, scan.edge
+    return proj, proj_mask, proj_labels, proj_labels_moving, proj_labels_static, unproj_labels, unproj_labels_moving, unproj_labels_static, path_seq, path_name, proj_x, proj_y, proj_range, unproj_range, proj_xyz, unproj_xyz, proj_remission, unproj_remissions, unproj_n_points, scan.edge
 
   def __len__(self):
     return len(self.scan_files)

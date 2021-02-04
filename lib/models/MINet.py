@@ -2,42 +2,15 @@ import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-BN_MOMENTUM = 0.1
-logger = logging.getLogger(__name__)
+from torch.nn import init
 
 
-class BasicBlock(nn.Module):
-    expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
-        super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, 3, stride, padding=1, bias=False)
-        # self.conv1 = nn.Conv2d(inplanes, planes, 1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(planes, planes, 3, stride, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-        self.downsample = downsample
-        self.stride = stride
-
+class hswish(nn.Module):
     def forward(self, x):
-        residual = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        if self.downsample is not None:
-            residual = self.downsample(x)
-
-        out += residual
-        out = self.relu(out)
-
+        out = x * F.relu6(x + 3, inplace=True) / 6
         return out
+
 
 class hsigmoid(nn.Module):
     def forward(self, x):
@@ -48,8 +21,9 @@ class hsigmoid(nn.Module):
 class SeModule(nn.Module):
     def __init__(self, in_size, reduction=4):
         super(SeModule, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+
         self.se = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(in_size, in_size // reduction, kernel_size=1, stride=1, padding=0, bias=False),
             nn.BatchNorm2d(in_size // reduction),
             nn.ReLU(inplace=True),
@@ -60,162 +34,6 @@ class SeModule(nn.Module):
 
     def forward(self, x):
         return x * self.se(x)
-
-class MobileMMA(nn.Module):
-    '''expand + depthwise + pointwise'''
-    def __init__(self, in_size, out_size):
-        super(MobileMMA, self).__init__()
-        self.nolinear = nn.ReLU(inplace=True)
-        kernel_size = 3
-        expand_size = 4*in_size
-
-        self.conv1 = nn.Conv2d(in_size, expand_size, kernel_size=kernel_size, stride=1, padding=kernel_size//2, groups=in_size, bias=False)
-        self.bn1 = nn.BatchNorm2d(expand_size)
-        self.conv2 = nn.Conv2d(expand_size, out_size, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_size)
-
-    def forward(self, x):
-        out = self.nolinear(self.bn1(self.conv1(x)))
-        out = self.nolinear(self.bn2(self.conv2(out)))
-        return out
-
-
-class MobileBlock(nn.Module):
-    '''expand + depthwise + pointwise'''
-    def __init__(self, in_size, out_size, stride=1, semodule=None):
-        super(MobileBlock, self).__init__()
-        self.stride = stride
-        self.se = semodule
-        self.nolinear = nn.ReLU(inplace=True)
-        expand_size = 2*in_size
-        kernel_size = 3
-
-        self.conv1 = nn.Conv2d(in_size, expand_size, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn1 = nn.BatchNorm2d(expand_size)
-        self.conv2 = nn.Conv2d(expand_size, expand_size, kernel_size=kernel_size, stride=self.stride, padding=kernel_size//2, groups=expand_size, bias=False)
-        self.bn2 = nn.BatchNorm2d(expand_size)
-        self.conv3 = nn.Conv2d(expand_size, out_size, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn3 = nn.BatchNorm2d(out_size)
-
-        self.shortcut = nn.Sequential()
-        if in_size != out_size:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_size, out_size, kernel_size=1, stride=1, padding=0, bias=False),
-                nn.BatchNorm2d(out_size),
-            )
-
-    def forward(self, x):
-        out = self.nolinear(self.bn1(self.conv1(x)))
-        out = self.nolinear(self.bn2(self.conv2(out)))
-        out = self.bn3(self.conv3(out))
-        if self.se != None:
-            out = self.se(out)
-        out = out + self.shortcut(x) if self.stride==1 else out
-        return out
-
-class sSE(nn.Module):
-    def __init__(self, out_channels):
-        super(sSE, self).__init__()
-        self.conv = nn.Sequential(nn.Conv2d(out_channels, 1, 1, 1, 0),
-                                  nn.BatchNorm2d(1))
-    def forward(self,x):
-        x=self.conv(x)
-        x=torch.sigmoid(x)
-        return x
-
-class cSE(nn.Module):
-    def __init__(self, out_channels):
-        super(cSE, self).__init__()
-        self.conv1 = nn.Conv2d(out_channels, out_channels*2, 1)
-        self.conv2 = nn.Conv2d(out_channels*2, out_channels, 1)
-    def forward(self,x):
-        x=nn.AvgPool2d(x.size()[2:])(x)
-        x=self.conv1(x)
-        x=F.relu(x)
-        x=self.conv2(x)
-        x=torch.sigmoid(x)
-        return x
-
-class fSE(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(fSE, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, 1)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, 1)
-    def forward(self,x):
-        x=nn.AvgPool2d(x.size()[2:])(x)
-        x=self.conv1(x)
-        x=F.relu(x)
-        x=self.conv2(x)
-        x=torch.sigmoid(x)
-        return x
-
-class FCM(nn.Module):
-    def __init__(self, in_channels, channels, out_channels):
-        super(FCM, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(in_channels, channels, 1),
-                                  nn.BatchNorm2d(channels))
-        self.conv2 = nn.Sequential(nn.Conv2d(channels, out_channels, 1),
-                                  nn.BatchNorm2d(out_channels))
-        self.spatial_gate = sSE(out_channels)
-        self.channel_gate = cSE(out_channels)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x),inplace=True)
-        x = F.relu(self.conv2(x),inplace=True)
-        g1 = self.spatial_gate(x)
-        g2 = self.channel_gate(x)
-        x = g1*x + g2*x
-        return x
-
-class MPS(nn.Module):
-    def __init__(self, in_high, in_low, num_classes):
-        super(MPS, self).__init__()
-        self.conv_high = nn.Conv2d(in_high, num_classes, 1)
-        self.conv_low = nn.Conv2d(in_low, num_classes, 1)
-
-    def forward(self, x_high, x_low):
-        x_high = self.conv_high(x_high)
-        x_low = self.conv_low(x_low)
-
-        return x_high, x_low
-
-
-class CascadeFeatureFusion(nn.Module):
-    """CFF Unit"""
-
-    def __init__(self, low_channels, high_channels, out_channels, nclass, norm_layer=nn.BatchNorm2d, is_train=True):
-        super(CascadeFeatureFusion, self).__init__()
-        self.conv_low = nn.Sequential(
-            nn.Conv2d(low_channels, out_channels, 3, padding=2, dilation=2, bias=False),
-            norm_layer(out_channels)
-        )
-        self.conv_high = nn.Sequential(
-            nn.Conv2d(high_channels, out_channels, 1, bias=False),
-            norm_layer(out_channels)
-        )
-
-        self.is_train = is_train
-        if is_train:
-            self.conv_low_cls = nn.Conv2d(out_channels, 1, 1, bias=False)
-
-    def forward(self, x_low, x_high):
-        x_low = F.interpolate(x_low, size=x_high.size()[2:], mode='bilinear', align_corners=True)
-        x_low = self.conv_low(x_low)
-        x_high = self.conv_high(x_high)
-        x = x_low + x_high
-        x = F.relu(x, inplace=True)
-
-        if self.is_train:
-            x_low_cls = self.conv_low_cls(x_low)
-            return x, x_low_cls
-        else:
-            return x, None
-
-class hswish(nn.Module):
-    def forward(self, x):
-        out = x * F.relu6(x + 3, inplace=True) / 6
-        return out
-
 
 
 class Block(nn.Module):
@@ -250,195 +68,148 @@ class Block(nn.Module):
         out = out + self.shortcut(x) if self.stride==1 else out
         return out
 
+class ClassifierModule(nn.Module):
+    def __init__(self, inplanes, dilation_series, padding_series, num_classes):
+        super(ClassifierModule, self).__init__()
+        self.conv2d_list = nn.ModuleList()
+        for dilation, padding in zip(dilation_series, padding_series):
+            self.conv2d_list.append(
+                nn.Conv2d(inplanes, num_classes, kernel_size=3, stride=1, padding=padding,
+                          dilation=dilation, bias=True))
 
+        for m in self.conv2d_list:
+            m.weight.data.normal_(0, 0.01)
+
+    def forward(self, x):
+        out = self.conv2d_list[0](x)
+        for i in range(len(self.conv2d_list) - 1):
+            out += self.conv2d_list[i + 1](x)
+        return out
+
+
+
+class Encoder(nn.Module):
+    def __init__(self, c_in=5):
+        super(Encoder, self).__init__()
+        self.conv1 = nn.Conv2d(c_in, 16, kernel_size=3, stride=(1, 2), padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.hs1 = hswish()
+
+        self.layer1 = nn.Sequential(
+                        Block(3, 16, 16, 16, nn.ReLU(inplace=True), None, 1),
+                        Block(3, 16, 64, 24, nn.ReLU(inplace=True), None, (1, 2)),
+                )
+
+        self.layer2 = nn.Sequential(
+                        Block(3, 24, 72, 24, nn.ReLU(inplace=True), None, 1),
+                        Block(5, 24, 72, 40, nn.ReLU(inplace=True), SeModule(40), 2),
+                )
+
+        self.layer3 = nn.Sequential(
+                        Block(5, 40, 120, 40, nn.ReLU(inplace=True), SeModule(40), 1),
+                        Block(5, 40, 120, 40, nn.ReLU(inplace=True), SeModule(40), 1),
+                        Block(3, 40, 240, 80, hswish(), None, 2),
+                )
+
+        self.layer4 = nn.Sequential(
+                    Block(3, 80, 200, 80, hswish(), None, 1),
+                    Block(3, 80, 184, 80, hswish(), None, 1),
+                    Block(3, 80, 184, 80, hswish(), None, 1),
+        )
+
+
+    def forward(self, x):
+        out = self.hs1(self.bn1(self.conv1(x)))
+        out1 = out = self.layer1(out)
+        out2 = out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+
+        return out, out2, out1
 
 
 class MINet(nn.Module):
-    def __init__(self, in_channels, num_classes, dropout, use_mps=True, is_train=True):
+    def __init__(self, c_in, num_classes, num_classes_moving, num_classes_static, dropout, use_mps=True, is_train=True):
         super(MINet, self).__init__()
 
-        self.in_channels = in_channels
+        self.encoder_c = Encoder(c_in)
+        self.encoder_diff = Encoder(c_in)
 
-        self.down_context = nn.Sequential(
-            nn.Conv2d(5, 20, 3, padding=1),
-            Block(3, 20, 20, 20, nn.ReLU(inplace=True), None, 1),
-            Block(3, 20, 64, 24, nn.ReLU(inplace=True), None, 2),
-            Block(3, 24, 72, 24, nn.ReLU(inplace=True), None, 1),
-            Block(5, 24, 72, 40, nn.ReLU(inplace=True), None, 2),
-            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
-            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
-            Block(3, 40, 240, 80, hswish(), None, 1),
-            Block(3, 80, 200, 80, hswish(), None, 1),
-            Block(3, 80, 184, 80, hswish(), None, 1),
-            Block(3, 80, 184, 80, hswish(), None, 1),
-            nn.Conv2d(80, 32, 1))
+        self.fusion = nn.Sequential(
+                            Block(5, 160, 672, 160, hswish(), SeModule(160), 1),
+                            Block(5, 160, 672, 160, hswish(), SeModule(160), 1),
+                            Block(5, 160, 960, 40, hswish(), SeModule(40), 1),
+                        )
 
-        self.down_diff_r = nn.Sequential(
-            nn.Conv2d(5, 20, 3, padding=1),
-            Block(3, 20, 20, 20, nn.ReLU(inplace=True), None, 1),
-            Block(3, 20, 64, 24, nn.ReLU(inplace=True), None, 2),
-            Block(3, 24, 72, 24, nn.ReLU(inplace=True), None, 1),
-            Block(5, 24, 72, 40, nn.ReLU(inplace=True), None, 2),
-            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
-            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
-            Block(3, 40, 240, 80, hswish(), None, 1),
-            Block(3, 80, 200, 80, hswish(), None, 1),
-            Block(3, 80, 184, 80, hswish(), None, 1),
-            Block(3, 80, 184, 80, hswish(), None, 1),
-            nn.Conv2d(80, 32, 1))
- 
-        self.down_diff_d = nn.Sequential(
-            nn.Conv2d(5, 20, 3, padding=1),
-            Block(3, 20, 20, 20, nn.ReLU(inplace=True), None, 1),
-            Block(3, 20, 64, 24, nn.ReLU(inplace=True), None, 2),
-            Block(3, 24, 72, 24, nn.ReLU(inplace=True), None, 1),
-            Block(5, 24, 72, 40, nn.ReLU(inplace=True), None, 2),
-            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
-            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
-            Block(3, 40, 240, 80, hswish(), None, 1),
-            Block(3, 80, 200, 80, hswish(), None, 1),
-            Block(3, 80, 184, 80, hswish(), None, 1),
-            Block(3, 80, 184, 80, hswish(), None, 1),
-            nn.Conv2d(80, 32, 1))
- 
+        self.decoder_static2 = Block(5, 40, 360, 24, hswish(), SeModule(24), 1)
+        self.decoder_static1 = Block(5, 24, 180, 32, hswish(), SeModule(32), 1)
 
-        self.layer_s_1 = MobileBlock(32, 64)
-        self.layer_s_2 = MobileBlock(64, 128)
-        self.layer_s_3 = MobileBlock(128, 128)
+        self.decoder_moving2 = Block(5, 40, 360, 24, hswish(), SeModule(24), 1)
+        self.decoder_moving1 = Block(5, 24, 180, 32, hswish(), SeModule(32), 1)
 
-        self.layer_m_1 = nn.Sequential(
-                                MobileBlock(32, 32),
-                                MobileBlock(32, 64)
-                            )
-        self.layer_m_2 = nn.Sequential(
-                                MobileBlock(64, 64),
-                                MobileBlock(64, 128)
-                            )
-        self.layer_m_3 = MobileBlock(128, 128)
-
-
-        self.layer_l_1 = self._make_layer(BasicBlock, 32, 64, 1, 1)
-        self.layer_l_2 = self._make_layer(BasicBlock, 64, 128, 1, 1)
-        self.layer_l_3 = self._make_layer(BasicBlock, 128, 128, 1, 1)
-
-
-        self.conv_f = nn.Conv2d(384, 32, 1)
-        self.cf = CascadeFeatureFusion(32, 32, 32, num_classes, is_train=is_train)
+        self.classifier = ClassifierModule(64, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
 
         self.dp = nn.Dropout2d(p=dropout)
-        self.classifier = nn.Conv2d(32, num_classes, kernel_size=3, stride=1, padding=1)
+        self.classifier = nn.Conv2d(64, num_classes, kernel_size=3, stride=1, padding=1)
 
-        self.pool2 = nn.AvgPool2d(2)
-        self.pool4 = nn.AvgPool2d(4)
+        self.init_params()
 
-        self.use_mps = use_mps and is_train
-        if self.use_mps:
-            self.mps_1 = MPS(64, 64, num_classes)
-            self.mps_2 = MPS(128, 128, num_classes)
+        self.conv_moving_e = nn.Conv2d(80, num_classes_moving, 3, padding=1)
+        self.conv_moving_d = nn.Conv2d(32, num_classes_moving, 3, padding=1)
 
+        self.conv_static_e = nn.Conv2d(80, num_classes_static, 3, padding=1)
+        self.conv_static_d = nn.Conv2d(32, num_classes_static, 3, padding=1)
 
-        self.conv_diff = self._make_layer(BasicBlock, 64, 32, 1, 1)
-
-        self.conv_bf1 = self._make_layer(BasicBlock, 32, 32, 1, 1)
-        self.conv_bf2 = self._make_layer(BasicBlock, 32, 32, 1, 1)
-
-        self.conv_edge = nn.Conv2d(32, 1, 3, padding=1)
-        self.conv_mot = nn.Conv2d(32, 3, 3, padding=1)
-
-    def _make_layer(self, block, inplanes, planes, blocks, stride=1):
-        downsample = None
-        if stride != 1 or inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                nn.Conv2d(inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(planes * block.expansion, momentum=BN_MOMENTUM),
-            )
-
-        layers = []
-        layers.append(block(inplanes, planes, stride, downsample))
-        inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(inplanes, planes))
-
-        return nn.Sequential(*layers)
-
-
+    def init_params(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                init.kaiming_normal_(m.weight, mode='fan_out')
+                if m.bias is not None:
+                    init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                init.constant_(m.weight, 1)
+                init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                init.normal_(m.weight, std=0.001)
+                if m.bias is not None:
+                    init.constant_(m.bias, 0)
 
     def forward(self, x):
         b, c, h, w = x.shape
         x = x.view(b, 5, -1, h, w)
-        x_d = x[:,0,:,:,:]
-        x_r = x[:,-1,:,:,:]
+        x_diff = x[:,0,:,:,:]
         x_c = x[:,:,-1,:,:]
 
-        x_d = self.down_diff_d(x_d)
-        x_r = self.down_diff_r(x_r)
-        x_c = self.down_context(x_c)
+        sup_edge = []
+        sup_moving = []
+        sup_static = []
 
-        edge = []
-        seg = []
-        mot = []
+        x_c, x_c2, x_c1 = self.encoder_c(x_c)
+        x_diff, x_diff2, x_diff1 = self.encoder_diff(x_diff)
 
-        x_diff = self.conv_diff(torch.cat([x_d, x_r], 1))
-        mot.append(self.conv_mot(x_diff))
+        sup_static.append(self.conv_static_e(x_c))
+        sup_moving.append(self.conv_moving_e(x_diff))
 
-        x = x_c + x_diff
+        x = self.fusion(torch.cat([x_c, x_diff], 1))
 
-        h, w = x.size(2), x.size(3)
+        x_static = self.decoder_static2(F.interpolate(x, size=(x_c2.size(2), x_c2.size(3)), mode='bilinear', align_corners=False) + x_c2)
+        x_static = self.decoder_static1(F.interpolate(x_static, size=(x_c1.size(2), x_c1.size(3)), mode='bilinear', align_corners=False) + x_c1)
 
-        x_s = self.layer_s_1(x)
-        x_m = self.layer_m_1(self.pool2(x))
-        x_l = self.layer_l_1(self.pool4(x))
+        x_moving = self.decoder_moving2(F.interpolate(x, size=(x_diff2.size(2), x_diff2.size(3)), mode='bilinear', align_corners=False) + x_diff2)
+        x_moving = self.decoder_moving1(F.interpolate(x_moving, size=(x_diff1.size(2), x_diff1.size(3)), mode='bilinear', align_corners=False) + x_diff1)
 
-        if self.use_mps:
-            sups = self.mps_1(x_s, x_m)
-            #TODO
-            seg.append(sups[0])
-            seg.append(sups[1])
+        sup_static.append(self.conv_static_d(x_static))
+        sup_moving.append(self.conv_moving_d(x_moving))
 
-        x_l = self.layer_l_2(x_l + self.pool2(x_m) + self.pool4(x_s))
-        x_m = self.layer_m_2(x_m + self.pool2(x_s))
-        x_s = self.layer_s_2(x_s)
+        #x = self.dp(x)
+        x = self.classifier(torch.cat([x_static, x_moving], 1))
 
-
-        if self.use_mps:
-            sups = self.mps_2(x_s, x_m)
-            #TODO
-            seg.append(sups[0])
-            seg.append(sups[1])
-
-        x_l = self.layer_l_3(x_l + self.pool2(x_m) + self.pool4(x_s))
-        x_m = self.layer_m_3(x_m + self.pool2(x_s))
-        x_s = self.layer_s_3(x_s)
-
-
-       # Upsampling
-        x_m = F.interpolate(
-            x_m, size=(h, w), mode='bilinear', align_corners=False)
-        x_l = F.interpolate(
-            x_l, size=(h, w), mode='bilinear', align_corners=False)
-
-
-        x = self.conv_f(torch.cat([x_s, x_m, x_l], 1))
-
-        x += x_c
-
-        x = self.conv_bf1(x)
-        x = self.conv_bf2(x + x_diff)
         x = F.interpolate(
-            x, size=(4*h, 4*w), mode='bilinear', align_corners=False)
-        edge.append(self.conv_edge(x))
+            x, size=(x.size(2), x.size(3)*4), mode='bilinear', align_corners=False)
 
-
-        #x, x_low_cls = self.cf(x, x_c)
-        #TODO
-        #edge.append(x_low_cls)
-
-        x = self.dp(x)
-        x = self.classifier(x)
         x = F.softmax(x, dim=1)
 
-        skips = {'mot': mot, 'edge': edge, 'seg': seg}
+        skips = {'sup_edge': sup_edge, 'sup_static': sup_static, 'sup_moving': sup_moving}
 
         return x, skips
 

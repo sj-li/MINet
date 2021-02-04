@@ -55,6 +55,7 @@ class Trainer():
     # weights for loss (and bias)
     # weights for loss (and bias)
     epsilon_w = self.ARCH["train"]["epsilon_w"]
+
     content = torch.zeros(self.parser.get_n_classes(), dtype=torch.float)
     for cl, freq in DATA["content"].items():
       x_cl = self.parser.to_xentropy(cl)  # map actual class to xentropy class
@@ -65,20 +66,33 @@ class Trainer():
         # don't weigh
         self.loss_w[x_cl] = 0
 
-    content = torch.zeros(3, dtype=torch.float)
+    content_moving = torch.zeros(self.parser.get_n_classes_moving(), dtype=torch.float)
     for cl, freq in DATA["content"].items():
-      if cl == 0:
-          content[0] += freq
-      elif cl > 250:
-          content[2] += freq
-      else:
-          content[1] += freq
+      x_cl = self.parser.to_xentropy_moving(cl)  # map actual class to xentropy class
+      content_moving[x_cl] += freq
+    self.loss_w_moving = 1 / (content_moving + epsilon_w)   # get weights
+    for x_cl, w in enumerate(self.loss_w_moving):  # ignore the ones necessary to ignore
+      if DATA["learning_ignore"][x_cl]:
+        # don't weigh
+        self.loss_w_moving[x_cl] = 0
 
-    self.loss_w_m = 1 / (content + epsilon_w)   # get weights
+    content_static = torch.zeros(self.parser.get_n_classes_static(), dtype=torch.float)
+    for cl, freq in DATA["content"].items():
+      x_cl = self.parser.to_xentropy_static(cl)  # map actual class to xentropy class
+      content_static[x_cl] += freq
+    self.loss_w_static = 1 / (content_static + epsilon_w)   # get weights
+    for x_cl, w in enumerate(self.loss_w_static):  # ignore the ones necessary to ignore
+      if DATA["learning_ignore"][x_cl]:
+        # don't weigh
+        self.loss_w_static[x_cl] = 0
+
+
 
     self.logger.info("Loss weights from content: ", self.loss_w.data)
+    self.logger.info("Loss weights moving from content: ", self.loss_w_moving.data)
+    self.logger.info("Loss weights static from content: ", self.loss_w_static.data)
 
-    self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), ARCH["model"]["dropout"])
+    self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), self.parser.get_n_classes_moving(), self.parser.get_n_classes_static(), ARCH["model"]["dropout"])
 
     # GPU?
     self.gpu = False
@@ -116,7 +130,8 @@ class Trainer():
 
     if self.use_mps:
       self.criterion_e = nn.BCEWithLogitsLoss().to(self.device)
-      self.criterion_m = nn.NLLLoss(weight=self.loss_w_m).to(self.device)
+      self.criterion_m = nn.NLLLoss(weight=self.loss_w_moving).to(self.device)
+      self.criterion_s = nn.NLLLoss(weight=self.loss_w_static).to(self.device)
       self.criterion_d = Depth_Loss().to(self.device)
 
 
@@ -127,6 +142,7 @@ class Trainer():
       if self.use_mps:
         self.criterion_e = nn.DataParallel(self.criterion_e).cuda()
         self.criterion_m = nn.DataParallel(self.criterion_m).cuda()
+        self.criterion_s = nn.DataParallel(self.criterion_s).cuda()
         self.criterion_d = nn.DataParallel(self.criterion_d).cuda()
 
     # Use SGD optimizer to train
@@ -257,7 +273,7 @@ class Trainer():
 
     end = time.time()
 
-    for i, (in_vol, proj_mask, proj_labels, _, path_seq, path_name, _, _, proj_range, _, _, _, _, _, _, edge) in enumerate(train_loader):
+    for i, (in_vol, proj_mask, proj_labels, proj_labels_moving, proj_labels_static, _, _, _, path_seq, path_name, _, _, proj_range, _, _, _, _, _, _, edge) in enumerate(train_loader):
         # measure data loading time
       data_time.update(time.time() - end)
       if not self.multi_gpu and self.gpu:
@@ -265,6 +281,8 @@ class Trainer():
         proj_mask = proj_mask.cuda()
       if self.gpu:
         proj_labels = proj_labels.cuda(non_blocking=True).long()
+        proj_labels_moving = proj_labels_moving.cuda(non_blocking=True).long()
+        proj_labels_static = proj_labels_static.cuda(non_blocking=True).long()
 
       # compute output
       output, skips = model(in_vol)
@@ -274,31 +292,30 @@ class Trainer():
         fsloss = loss
 
         sloss = 0
-        for j, s in enumerate(skips['seg']):
-          proj_labels_small = F.interpolate(proj_labels.unsqueeze(1).float(), size=(skips['seg'][j].size(2), skips['seg'][j].size(3)), mode='nearest').long().squeeze()
-          l = self.criterion(torch.log(F.softmax(s, dim=1).clamp(min=1e-8)), proj_labels_small)
+        for j, s in enumerate(skips['sup_static']):
+          proj_labels_small = F.interpolate(proj_labels_static.unsqueeze(1).float(), size=(skips['sup_static'][j].size(2), skips['sup_static'][j].size(3)), mode='nearest').long().squeeze()
+          l = self.criterion_s(torch.log(F.softmax(s, dim=1).clamp(min=1e-8)), proj_labels_small)
           sloss = sloss + l
-        sloss *= 0.1
+        sloss *= 0.5
 
         mloss = 0
-        for j, s in enumerate(skips['mot']):
-          mot_labels_small = F.interpolate((proj_labels > 250).unsqueeze(1).float(), size=(skips['mot'][j].size(2), skips['mot'][j].size(3)), mode='nearest').long().squeeze()
+        for j, s in enumerate(skips['sup_moving']):
+          mot_labels_small = F.interpolate(proj_labels_moving.unsqueeze(1).float(), size=(skips['sup_moving'][j].size(2), skips['sup_moving'][j].size(3)), mode='nearest').long().squeeze()
           l = self.criterion_m(torch.log(F.softmax(s, dim=1).clamp(min=1e-8)), mot_labels_small)
           mloss = mloss + l
-        mloss *= 0.1
+        mloss *= 0.5
 
         edge = edge.cuda()
         eloss = 0
-        for j, e in enumerate(skips['edge']):
-          edge_small = F.interpolate(edge.unsqueeze(1).float(), size=(skips['edge'][j].size(2), skips['edge'][j].size(3)), mode='nearest')
+        for j, e in enumerate(skips['sup_edge']):
+          edge_small = F.interpolate(edge.unsqueeze(1).float(), size=(skips['sup_edge'][j].size(2), skips['sup_edge'][j].size(3)), mode='nearest')
           l = self.criterion_e(e, edge_small.float())
-          # l[l > 1] = 0
           eloss = eloss + l
   
         fslosses.update(fsloss.mean().item(), in_vol.size(0))
         slosses.update(sloss.mean().item(), in_vol.size(0))
         mlosses.update(mloss.mean().item(), in_vol.size(0))
-        elosses.update(eloss.mean().item(), in_vol.size(0))
+        #elosses.update(eloss.mean().item(), in_vol.size(0))
 
         loss = fsloss + sloss + eloss  + mloss
 
@@ -352,12 +369,11 @@ class Trainer():
               'Loss {loss.val:.4f} ({loss.avg:.4f}) | '
               'floss {loss.val:.4f} ({fsloss.avg:.4f}) | '
               'sloss {loss.val:.4f} ({sloss.avg:.4f}) | '
-              'eloss {loss.val:.4f} ({eloss.avg:.4f}) | '
               'mloss {loss.val:.4f} ({mloss.avg:.4f}) | '
               'acc {acc.val:.3f} ({acc.avg:.3f}) | '
               'IoU {iou.val:.3f} ({iou.avg:.3f})'.format(
                   epoch, i, len(train_loader), batch_time=batch_time,
-                  data_time=data_time, loss=losses, fsloss=fslosses, sloss=slosses, eloss=elosses, mloss=mlosses, acc=acc, iou=iou, lr=lr,
+                  data_time=data_time, loss=losses, fsloss=fslosses, sloss=slosses, mloss=mlosses, acc=acc, iou=iou, lr=lr,
                   umean=update_mean, ustd=update_std))
 
       # step scheduler

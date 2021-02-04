@@ -24,8 +24,14 @@ class Parser():
     self.test_sequences = data_cfg["split"]["test"]
     self.labels = data_cfg["labels"]
     self.color_map = data_cfg["color_map"]
+
     self.learning_map = data_cfg["learning_map"]
     self.learning_map_inv = data_cfg["learning_map_inv"]
+    self.learning_map_static = data_cfg["learning_map_static"]
+    self.learning_map_inv_static = data_cfg["learning_map_inv_static"]
+    self.learning_map_moving = data_cfg["learning_map_moving"]
+    self.learning_map_inv_moving = data_cfg["learning_map_inv_moving"]
+ 
     self.sensor = arch_cfg["dataset"]["sensor"]
     self.max_points = arch_cfg["dataset"]["max_points"]
     self.batch_size = arch_cfg["train"]["batch_size"]
@@ -35,6 +41,8 @@ class Parser():
 
     # number of classes that matters is the one for xentropy
     self.nclasses = len(self.learning_map_inv)
+    self.nclasses_static = len(self.learning_map_inv_static)
+    self.nclasses_moving = len(self.learning_map_inv_moving)
 
     # Data loading code
     self.train_dataset = self.DATASET_TYPE(root=self.root,
@@ -42,6 +50,8 @@ class Parser():
                                        labels=self.labels,
                                        color_map=self.color_map,
                                        learning_map=self.learning_map,
+                                       learning_map_moving=self.learning_map_moving,
+                                       learning_map_static=self.learning_map_static,
                                        learning_map_inv=self.learning_map_inv,
                                        sensor=self.sensor,
                                        max_points=self.max_points,
@@ -61,6 +71,8 @@ class Parser():
                                        labels=self.labels,
                                        color_map=self.color_map,
                                        learning_map=self.learning_map,
+                                       learning_map_moving=self.learning_map_moving,
+                                       learning_map_static=self.learning_map_static,
                                        learning_map_inv=self.learning_map_inv,
                                        sensor=self.sensor,
                                        max_points=self.max_points,
@@ -81,6 +93,8 @@ class Parser():
                                         labels=self.labels,
                                         color_map=self.color_map,
                                         learning_map=self.learning_map,
+                                        learning_map_moving=self.learning_map_moving,
+                                        learning_map_static=self.learning_map_static,
                                         learning_map_inv=self.learning_map_inv,
                                         sensor=self.sensor,
                                         max_points=self.max_points,
@@ -128,6 +142,12 @@ class Parser():
   def get_n_classes(self):
     return self.nclasses
 
+  def get_n_classes_moving(self):
+    return self.nclasses_moving
+
+  def get_n_classes_static(self):
+    return self.nclasses_static
+
   def get_original_class_string(self, idx):
     return self.labels[idx]
 
@@ -141,6 +161,14 @@ class Parser():
   def to_xentropy(self, label):
     # put label in xentropy values
     return self.DATASET_TYPE.map(label, self.learning_map)
+
+  def to_xentropy_static(self, label):
+    # put label in xentropy values
+    return self.DATASET_TYPE.map(label, self.learning_map_static)
+
+  def to_xentropy_moving(self, label):
+    # put label in xentropy values
+    return self.DATASET_TYPE.map(label, self.learning_map_moving)
 
   def to_color(self, label):
     # put label in original values

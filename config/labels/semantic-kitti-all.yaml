@@ -196,6 +196,130 @@ learning_ignore: # Ignore classes
   23: False    # "moving-motorcyclist"
   24: False    # "moving-other-vehicle"
   25: False    # "moving-truck"
+
+learning_map_static:
+  0 : 0     # "unlabeled"
+  1 : 0     # "outlier" mapped to "unlabeled" --------------------------mapped
+  10: 1     # "car"
+  11: 2     # "bicycle"
+  13: 5     # "bus" mapped to "other-vehicle" --------------------------mapped
+  15: 3     # "motorcycle"
+  16: 5     # "on-rails" mapped to "other-vehicle" ---------------------mapped
+  18: 4     # "truck"
+  20: 5     # "other-vehicle"
+  30: 6     # "person"
+  31: 7     # "bicyclist"
+  32: 8     # "motorcyclist"
+  40: 9     # "road"
+  44: 10    # "parking"
+  48: 11    # "sidewalk"
+  49: 12    # "other-ground"
+  50: 13    # "building"
+  51: 14    # "fence"
+  52: 0     # "other-structure" mapped to "unlabeled" ------------------mapped
+  60: 9     # "lane-marking" to "road" ---------------------------------mapped
+  70: 15    # "vegetation"
+  71: 16    # "trunk"
+  72: 17    # "terrain"
+  80: 18    # "pole"
+  81: 19    # "traffic-sign"
+  99: 0     # "other-object" to "unlabeled" ----------------------------mapped
+  252: 1    # "moving-car" to "car" ------------------------------------mapped
+  253: 7    # "moving-bicyclist" to "bicyclist" ------------------------mapped
+  254: 6    # "moving-person" to "person" ------------------------------mapped
+  255: 8    # "moving-motorcyclist" to "motorcyclist" ------------------mapped
+  256: 5    # "moving-on-rails" mapped to "other-vehicle" --------------mapped
+  257: 5    # "moving-bus" mapped to "other-vehicle" -------------------mapped
+  258: 4    # "moving-truck" to "truck" --------------------------------mapped
+  259: 5    # "moving-other"-vehicle to "other-vehicle" ----------------mapped
+learning_map_inv_static: # inverse of previous map
+  0: 0      # "unlabeled", and others ignored
+  1: 10     # "car"
+  2: 11     # "bicycle"
+  3: 15     # "motorcycle"
+  4: 18     # "truck"
+  5: 20     # "other-vehicle"
+  6: 30     # "person"
+  7: 31     # "bicyclist"
+  8: 32     # "motorcyclist"
+  9: 40     # "road"
+  10: 44    # "parking"
+  11: 48    # "sidewalk"
+  12: 49    # "other-ground"
+  13: 50    # "building"
+  14: 51    # "fence"
+  15: 70    # "vegetation"
+  16: 71    # "trunk"
+  17: 72    # "terrain"
+  18: 80    # "pole"
+  19: 81    # "traffic-sign"
+learning_ignore_static: # Ignore classes
+  0: True      # "unlabeled", and others ignored
+  1: False     # "car"
+  2: False     # "bicycle"
+  3: False     # "motorcycle"
+  4: False     # "truck"
+  5: False     # "other-vehicle"
+  6: False     # "person"
+  7: False     # "bicyclist"
+  8: False     # "motorcyclist"
+  9: False     # "road"
+  10: False    # "parking"
+  11: False    # "sidewalk"
+  12: False    # "other-ground"
+  13: False    # "building"
+  14: False    # "fence"
+  15: False    # "vegetation"
+  16: False    # "trunk"
+  17: False    # "terrain"
+  18: False    # "pole"
+  19: False    # "traffic-sign"
+
+learning_map_moving:
+  0 : 0     # "unlabeled"       mapped to "static" ---------------------------mapped
+  1 : 0     # "outlier"         mapped to "static" ---------------------------mapped
+  10: 1     # "car"             mapped to "static" ---------------------------mapped
+  11: 1     # "bicycle"         mapped to "static" ---------------------------mapped
+  13: 1     # "bus"             mapped to "static" ---------------------------mapped
+  15: 1     # "motorcycle"      mapped to "static" ---------------------------mapped
+  16: 1     # "on-rails"        mapped to "static" ---------------------------mapped
+  18: 1     # "truck"           mapped to "static" ---------------------------mapped
+  20: 1     # "other-vehicle"   mapped to "static" ---------------------------mapped
+  30: 1     # "person"          mapped to "static" ---------------------------mapped
+  31: 1     # "bicyclist"       mapped to "static" ---------------------------mapped
+  32: 1     # "motorcyclist"    mapped to "static" ---------------------------mapped
+  40: 1     # "road"            mapped to "static" ---------------------------mapped
+  44: 1    # "parking"          mapped to "static" ---------------------------mapped
+  48: 1    # "sidewalk"         mapped to "static" ---------------------------mapped
+  49: 1    # "other-ground"     mapped to "static" ---------------------------mapped
+  50: 1    # "building"         mapped to "static" ---------------------------mapped
+  51: 1    # "fence"            mapped to "static" ---------------------------mapped
+  52: 1     # "other-structure" mapped to "static" ---------------------------mapped
+  60: 1     # "lane-marking"    mapped to "static" ---------------------------mapped
+  70: 1    # "vegetation"       mapped to "static" ---------------------------mapped
+  71: 1    # "trunk"            mapped to "static" ---------------------------mapped
+  72: 1    # "terrain"          mapped to "static" ---------------------------mapped
+  80: 1    # "pole"             mapped to "static" ---------------------------mapped
+  81: 1    # "traffic-sign"     mapped to "static" ---------------------------mapped
+  99: 1     # "other-object"    mapped to "static" ---------------------------mapped
+  252: 2    # "moving-car"          mapped to "moving" ---------------------------mapped
+  253: 2    # "moving-bicyclist"    mapped to "moving" ---------------------------mapped
+  254: 2    # "moving-person"       mapped to "moving" ---------------------------mapped
+  255: 2    # "moving-motorcyclist" mapped to "moving" ---------------------------mapped
+  256: 2    # "moving-on-rails"     mapped to "moving" ---------------------------mapped
+  257: 2    # "moving-bus"          mapped to "moving" ---------------------------mapped
+  258: 2    # "moving-truck"        mapped to "moving" ---------------------------mapped
+  259: 2    # "moving-other"        mapped to "moving" ---------------------------mapped
+learning_map_inv_moving: # inverse of previous map
+  0: 0      # "unlabeled", and others ignored
+  1: 10     # "static"
+  2: 252    # "moving"
+
+learning_ignore_moving: # Ignore classes
+  0: True      # "unlabeled", and others ignored
+  1: False     # "car"
+  2: False     # "bicycle"
+
 split: # sequence numbers
   train:
     - 0
