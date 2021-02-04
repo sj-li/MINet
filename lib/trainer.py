@@ -413,7 +413,7 @@ class Trainer():
 
     with torch.no_grad():
       end = time.time()
-      for i, (in_vol, proj_mask, proj_labels, _, path_seq, path_name, _, _, proj_range, _, _, _, _, _, _, edge) in enumerate(val_loader):
+      for i, (in_vol, proj_mask, proj_labels, proj_labels_moving, proj_labels_static, _, _, _, path_seq, path_name, _, _, proj_range, _, _, _, _, _, _, edge) in enumerate(val_loader):
         if not self.multi_gpu and self.gpu:
           in_vol = in_vol.cuda()
           proj_mask = proj_mask.cuda()
