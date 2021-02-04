@@ -188,7 +188,7 @@ class Trainer():
     torch.cuda.manual_seed_all(0)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    torch.set_deterministic(True)
+    #torch.set_deterministic(True)
 
     # accuracy and IoU stuff
     best_train_iou = 0.0
