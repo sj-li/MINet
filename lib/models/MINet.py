@@ -259,9 +259,22 @@ class MINet(nn.Module):
 
         self.in_channels = in_channels
 
-        self.conv_in = nn.Conv2d(25, 20, 3, padding=1)
+        self.down_context = nn.Sequential(
+            nn.Conv2d(5, 20, 3, padding=1),
+            Block(3, 20, 20, 20, nn.ReLU(inplace=True), None, 1),
+            Block(3, 20, 64, 24, nn.ReLU(inplace=True), None, 2),
+            Block(3, 24, 72, 24, nn.ReLU(inplace=True), None, 1),
+            Block(5, 24, 72, 40, nn.ReLU(inplace=True), None, 2),
+            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
+            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
+            Block(3, 40, 240, 80, hswish(), None, 1),
+            Block(3, 80, 200, 80, hswish(), None, 1),
+            Block(3, 80, 184, 80, hswish(), None, 1),
+            Block(3, 80, 184, 80, hswish(), None, 1),
+            nn.Conv2d(80, 32, 1))
 
-        self.down = nn.Sequential(
+        self.down_diff_r = nn.Sequential(
+            nn.Conv2d(5, 20, 3, padding=1),
             Block(3, 20, 20, 20, nn.ReLU(inplace=True), None, 1),
             Block(3, 20, 64, 24, nn.ReLU(inplace=True), None, 2),
             Block(3, 24, 72, 24, nn.ReLU(inplace=True), None, 1),
@@ -274,7 +287,20 @@ class MINet(nn.Module):
             Block(3, 80, 184, 80, hswish(), None, 1),
             nn.Conv2d(80, 32, 1))
  
-        self.conv_t = MobileBlock(20, 32)
+        self.down_diff_d = nn.Sequential(
+            nn.Conv2d(5, 20, 3, padding=1),
+            Block(3, 20, 20, 20, nn.ReLU(inplace=True), None, 1),
+            Block(3, 20, 64, 24, nn.ReLU(inplace=True), None, 2),
+            Block(3, 24, 72, 24, nn.ReLU(inplace=True), None, 1),
+            Block(5, 24, 72, 40, nn.ReLU(inplace=True), None, 2),
+            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
+            Block(5, 40, 120, 40, nn.ReLU(inplace=True), None, 1),
+            Block(3, 40, 240, 80, hswish(), None, 1),
+            Block(3, 80, 200, 80, hswish(), None, 1),
+            Block(3, 80, 184, 80, hswish(), None, 1),
+            Block(3, 80, 184, 80, hswish(), None, 1),
+            nn.Conv2d(80, 32, 1))
+ 
 
         self.layer_s_1 = MobileBlock(32, 64)
         self.layer_s_2 = MobileBlock(64, 128)
@@ -310,6 +336,15 @@ class MINet(nn.Module):
             self.mps_1 = MPS(64, 64, num_classes)
             self.mps_2 = MPS(128, 128, num_classes)
 
+
+        self.conv_diff = self._make_layer(BasicBlock, 64, 32, 1, 1)
+
+        self.conv_bf1 = self._make_layer(BasicBlock, 32, 32, 1, 1)
+        self.conv_bf2 = self._make_layer(BasicBlock, 32, 32, 1, 1)
+
+        self.conv_edge = nn.Conv2d(32, 1, 3, padding=1)
+        self.conv_mot = nn.Conv2d(32, 3, 3, padding=1)
+
     def _make_layer(self, block, inplanes, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or inplanes != planes * block.expansion:
@@ -330,14 +365,26 @@ class MINet(nn.Module):
 
 
     def forward(self, x):
-        xs = self.conv_in(x)
+        b, c, h, w = x.shape
+        x = x.view(b, 5, -1, h, w)
+        x_d = x[:,0,:,:,:]
+        x_r = x[:,-1,:,:,:]
+        x_c = x[:,:,-1,:,:]
 
-        x = self.down(xs)
-
-        h, w = x.size(2), x.size(3)
+        x_d = self.down_diff_d(x_d)
+        x_r = self.down_diff_r(x_r)
+        x_c = self.down_context(x_c)
 
         edge = []
         seg = []
+        mot = []
+
+        x_diff = self.conv_diff(torch.cat([x_d, x_r], 1))
+        mot.append(self.conv_mot(x_diff))
+
+        x = x_c + x_diff
+
+        h, w = x.size(2), x.size(3)
 
         x_s = self.layer_s_1(x)
         x_m = self.layer_m_1(self.pool2(x))
@@ -374,15 +421,24 @@ class MINet(nn.Module):
 
         x = self.conv_f(torch.cat([x_s, x_m, x_l], 1))
 
-        x, x_low_cls = self.cf(x, self.conv_t(xs))
+        x += x_c
+
+        x = self.conv_bf1(x)
+        x = self.conv_bf2(x + x_diff)
+        x = F.interpolate(
+            x, size=(4*h, 4*w), mode='bilinear', align_corners=False)
+        edge.append(self.conv_edge(x))
+
+
+        #x, x_low_cls = self.cf(x, x_c)
         #TODO
-        edge.append(x_low_cls)
+        #edge.append(x_low_cls)
 
         x = self.dp(x)
         x = self.classifier(x)
         x = F.softmax(x, dim=1)
 
-        skips = {'edge': edge, 'seg': seg}
+        skips = {'mot': mot, 'edge': edge, 'seg': seg}
 
         return x, skips
 

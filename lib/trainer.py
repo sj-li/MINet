@@ -64,6 +64,18 @@ class Trainer():
       if DATA["learning_ignore"][x_cl]:
         # don't weigh
         self.loss_w[x_cl] = 0
+
+    content = torch.zeros(3, dtype=torch.float)
+    for cl, freq in DATA["content"].items():
+      if cl == 0:
+          content[0] += freq
+      elif cl > 250:
+          content[2] += freq
+      else:
+          content[1] += freq
+
+    self.loss_w_m = 1 / (content + epsilon_w)   # get weights
+
     self.logger.info("Loss weights from content: ", self.loss_w.data)
 
     self.model = get_model(ARCH['model']['name'])(ARCH['model']['in_channels'], self.parser.get_n_classes(), ARCH["model"]["dropout"])
@@ -104,6 +116,7 @@ class Trainer():
 
     if self.use_mps:
       self.criterion_e = nn.BCEWithLogitsLoss().to(self.device)
+      self.criterion_m = nn.NLLLoss(weight=self.loss_w_m).to(self.device)
       self.criterion_d = Depth_Loss().to(self.device)
 
 
@@ -113,6 +126,7 @@ class Trainer():
       self.ls = nn.DataParallel(self.ls).cuda()
       if self.use_mps:
         self.criterion_e = nn.DataParallel(self.criterion_e).cuda()
+        self.criterion_m = nn.DataParallel(self.criterion_m).cuda()
         self.criterion_d = nn.DataParallel(self.criterion_d).cuda()
 
     # Use SGD optimizer to train
@@ -228,6 +242,7 @@ class Trainer():
     losses = AverageMeter()
     fslosses = AverageMeter()
     slosses = AverageMeter()
+    mlosses = AverageMeter()
     elosses = AverageMeter()
     acc = AverageMeter()
     iou = AverageMeter()
@@ -265,6 +280,13 @@ class Trainer():
           sloss = sloss + l
         sloss *= 0.1
 
+        mloss = 0
+        for j, s in enumerate(skips['mot']):
+          mot_labels_small = F.interpolate((proj_labels > 250).unsqueeze(1).float(), size=(skips['mot'][j].size(2), skips['mot'][j].size(3)), mode='nearest').long().squeeze()
+          l = self.criterion_m(torch.log(F.softmax(s, dim=1).clamp(min=1e-8)), mot_labels_small)
+          mloss = mloss + l
+        mloss *= 0.1
+
         edge = edge.cuda()
         eloss = 0
         for j, e in enumerate(skips['edge']):
@@ -275,9 +297,10 @@ class Trainer():
   
         fslosses.update(fsloss.mean().item(), in_vol.size(0))
         slosses.update(sloss.mean().item(), in_vol.size(0))
-        #elosses.update(eloss.mean().item(), in_vol.size(0))
+        mlosses.update(mloss.mean().item(), in_vol.size(0))
+        elosses.update(eloss.mean().item(), in_vol.size(0))
 
-        loss = fsloss + sloss + eloss 
+        loss = fsloss + sloss + eloss  + mloss
 
       # compute gradient and do SGD step
       optimizer.zero_grad()
@@ -327,10 +350,14 @@ class Trainer():
               'Update: {umean:.3e} mean,{ustd:.3e} std | '
               'Epoch: [{0}][{1}/{2}] | '
               'Loss {loss.val:.4f} ({loss.avg:.4f}) | '
+              'floss {loss.val:.4f} ({fsloss.avg:.4f}) | '
+              'sloss {loss.val:.4f} ({sloss.avg:.4f}) | '
+              'eloss {loss.val:.4f} ({eloss.avg:.4f}) | '
+              'mloss {loss.val:.4f} ({mloss.avg:.4f}) | '
               'acc {acc.val:.3f} ({acc.avg:.3f}) | '
               'IoU {iou.val:.3f} ({iou.avg:.3f})'.format(
                   epoch, i, len(train_loader), batch_time=batch_time,
-                  data_time=data_time, loss=losses, acc=acc, iou=iou, lr=lr,
+                  data_time=data_time, loss=losses, fsloss=fslosses, sloss=slosses, eloss=elosses, mloss=mlosses, acc=acc, iou=iou, lr=lr,
                   umean=update_mean, ustd=update_std))
 
       # step scheduler
@@ -339,7 +366,8 @@ class Trainer():
     if self.use_mps:
       self.writer.add_scalar('training/fsloss', fslosses.avg, epoch)
       self.writer.add_scalar('training/sloss', slosses.avg, epoch)
-      #self.writer.add_scalar('training/eloss', elosses.avg, epoch)
+      self.writer.add_scalar('training/mloss', mlosses.avg, epoch)
+      self.writer.add_scalar('training/eloss', elosses.avg, epoch)
 
     return acc.avg, iou.avg, losses.avg, update_ratio_meter.avg
 
