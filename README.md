@@ -1,4 +1,4 @@
-# MINet
+# Multi-scale Interaction for Real-time LiDAR Data Segmentation on an Embedded Platform (RA-L)
 
 ## Dependence:
 1. Accoding to LiDAR-Bonnetal (https://github.com/PRBonn/lidar-bonnetal/tree/master/train)
