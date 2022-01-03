@@ -3,6 +3,7 @@
 ## Dependence:
 1. Accoding to LiDAR-Bonnetal (https://github.com/PRBonn/lidar-bonnetal/tree/master/train)
 2. flops-counter.pytorch (https://github.com/sovrasov/flops-counter.pytorch)
+3. Edge files: [Edges](https://1drv.ms/u/s!AqmpjbHa-zD-ibFOZr8GlhLdrcpy2g?e=X43LXt)
 
 ## Infer:
 1. put 'sequences' folder under 'data/'
