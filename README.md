@@ -14,3 +14,15 @@
 1. Only infer validation set, refer 'lib/user.py' line 70-80.
 2. pay attention to kNN setting. (In 'config/arch/*.yaml')
 
+## Citation
+Please cite the following paper if you use this repository in your reseach.
+```
+@ARTICLE{9633188,
+  author={Li, Shijie and Chen, Xieyuanli and Liu, Yun and Dai, Dengxin and Stachniss, Cyrill and Gall, Juergen},
+  journal={IEEE Robotics and Automation Letters}, 
+  title={Multi-Scale Interaction for Real-Time LiDAR Data Segmentation on an Embedded Platform}, 
+  year={2022},
+  volume={7},
+  number={2},
+  pages={738-745},
+  doi={10.1109/LRA.2021.3132059}}
